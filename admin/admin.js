@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- AUXILIARES DE SINCRONIZACIÓN EN LA NUBE ---
 function getCloudSyncUrl(code = '', action = '') {
-  return `../.netlify/functions/sync?${action ? 'action=' + action + '&' : ''}${code ? 'code=' + code : ''}`;
+  return `../api/sync?${action ? 'action=' + action + '&' : ''}${code ? 'code=' + code : ''}`;
 }
 
 let accountsList = [];

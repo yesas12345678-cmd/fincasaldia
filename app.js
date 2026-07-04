@@ -2938,7 +2938,7 @@ window.toggleIncidentSupply = toggleIncidentSupply;
 
 // --- FUNCIONES DE SINCRONIZACIÓN EN LA NUBE ---
 
-// Obtener URL de la función serverless de Netlify para evitar CORS preflight
+// Obtener URL de la API de sincronización para evitar CORS preflight
 function getCloudSyncUrl(code = '') {
   const isLocal = window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1' || 
@@ -2946,7 +2946,7 @@ function getCloudSyncUrl(code = '') {
                   window.location.hostname.startsWith('172.20.') ||
                   window.location.hostname.startsWith('10.');
   const base = isLocal ? 'https://fincasaldia.com' : '';
-  return `${base}/.netlify/functions/sync${code ? '?code=' + code : ''}`;
+  return `${base}/api/sync${code ? '?code=' + code : ''}`;
 }
 
 function updateCloudSyncUI() {
