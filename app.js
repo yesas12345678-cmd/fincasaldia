@@ -2506,6 +2506,7 @@ function speak(text, onEndCallback) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'es-ES';
+  utterance.rate = 1.25; // Velocidad un 25% más rápida
   
   let callbackFired = false;
   const triggerCallback = () => {
