@@ -308,12 +308,12 @@ function setupNavigation() {
       const targetSectionId = item.getAttribute('data-target');
       
       navItems.forEach(n => n.classList.remove('active'));
-      adminBtn.classList.remove('active'); // Desactivar botón de admin si se pulsa otro
+      if (adminBtn) adminBtn.classList.remove('active'); // Desactivar botón de admin si se pulsa otro
       sections.forEach(s => s.classList.remove('active'));
       
       item.classList.add('active');
       const targetSection = document.getElementById(targetSectionId);
-      targetSection.classList.add('active');
+      if (targetSection) targetSection.classList.add('active');
       
       // Ajustar tamaño del mapa si se vuelve a la sección de fincas
       if (targetSectionId === 'section-fincas' && map) {
@@ -334,14 +334,16 @@ function setupNavigation() {
   });
 
   // Botón pequeño de administración (muñequito)
-  adminBtn.addEventListener('click', () => {
-    // Si la sección de administración ya está activa en pantalla, no hacemos nada
-    const adminSection = document.getElementById('section-admin');
-    if (adminSection.classList.contains('active')) {
-      return;
-    }
-    openAdminLoginModal();
-  });
+  if (adminBtn) {
+    adminBtn.addEventListener('click', () => {
+      // Si la sección de administración ya está activa en pantalla, no hacemos nada
+      const adminSection = document.getElementById('section-admin');
+      if (adminSection && adminSection.classList.contains('active')) {
+        return;
+      }
+      openAdminLoginModal();
+    });
+  }
 }
 
 // --- CONFIGURACIÓN DEL MAPA ---
@@ -1500,27 +1502,34 @@ function goToAdminSection() {
 // Escuchadores de eventos para la administración en la página principal
 function setupAdminEventListeners() {
   // Envío de contraseña del login
-  document.getElementById('form-admin-login').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const passwordInput = document.getElementById('admin-pass-input');
-    const errorText = document.getElementById('admin-login-error');
-    
-    if (passwordInput.value === ADMIN_PASSWORD) {
-      sessionStorage.setItem('fs_auth', 'true');
-      errorText.style.display = 'none';
-      closeAdminLoginModal();
-      goToAdminSection();
-    } else {
-      errorText.style.display = 'block';
-      passwordInput.value = '';
-      passwordInput.focus();
-    }
-  });
+  const formAdminLogin = document.getElementById('form-admin-login');
+  if (formAdminLogin) {
+    formAdminLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const passwordInput = document.getElementById('admin-pass-input');
+      const errorText = document.getElementById('admin-login-error');
+      
+      if (passwordInput.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem('fs_auth', 'true');
+        errorText.style.display = 'none';
+        closeAdminLoginModal();
+        goToAdminSection();
+      } else {
+        errorText.style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    });
+  }
 
-  const modalLogin = document.getElementById('modal-admin-login');
-  document.getElementById('btn-close-modal-admin-login').addEventListener('click', closeAdminLoginModal);
-  document.getElementById('btn-cancel-admin-login').addEventListener('click', closeAdminLoginModal);
-  document.getElementById('modal-admin-login-overlay').addEventListener('click', closeAdminLoginModal);
+  const btnCloseModalAdminLogin = document.getElementById('btn-close-modal-admin-login');
+  if (btnCloseModalAdminLogin) btnCloseModalAdminLogin.addEventListener('click', closeAdminLoginModal);
+  
+  const btnCancelAdminLogin = document.getElementById('btn-cancel-admin-login');
+  if (btnCancelAdminLogin) btnCancelAdminLogin.addEventListener('click', closeAdminLoginModal);
+  
+  const modalAdminLoginOverlay = document.getElementById('modal-admin-login-overlay');
+  if (modalAdminLoginOverlay) modalAdminLoginOverlay.addEventListener('click', closeAdminLoginModal);
 
   // Pestañas de administración (Configuración / Dibujar)
   const tabBtns = document.querySelectorAll('.admin-tab-btn');
@@ -1538,8 +1547,10 @@ function setupAdminEventListeners() {
       
       btn.classList.add('active');
       const targetTab = document.getElementById(targetId);
-      targetTab.style.display = 'flex';
-      targetTab.classList.add('active');
+      if (targetTab) {
+        targetTab.style.display = 'flex';
+        targetTab.classList.add('active');
+      }
       
       if (targetId === 'tab-seleccion' && adminMap) {
         setTimeout(() => {
@@ -1550,18 +1561,31 @@ function setupAdminEventListeners() {
   });
 
   // Copias de seguridad en panel de administración
-  document.getElementById('btn-export-backup').addEventListener('click', exportBackup);
-  document.getElementById('input-import-backup').addEventListener('change', importBackup);
-  document.getElementById('btn-reset-db').addEventListener('click', resetDatabase);
+  const btnExportBackup = document.getElementById('btn-export-backup');
+  if (btnExportBackup) btnExportBackup.addEventListener('click', exportBackup);
+  
+  const inputImportBackup = document.getElementById('input-import-backup');
+  if (inputImportBackup) inputImportBackup.addEventListener('change', importBackup);
+  
+  const btnResetDb = document.getElementById('btn-reset-db');
+  if (btnResetDb) btnResetDb.addEventListener('click', resetDatabase);
 
   // Gestión de carpetas
-  document.getElementById('btn-create-folder').addEventListener('click', createFolder);
+  const btnCreateFolder = document.getElementById('btn-create-folder');
+  if (btnCreateFolder) btnCreateFolder.addEventListener('click', createFolder);
 
   // Sincronización en la Nube
-  document.getElementById('btn-generate-sync-code').addEventListener('click', generateCloudSyncGroup);
-  document.getElementById('btn-connect-sync-code').addEventListener('click', connectToCloudSyncGroup);
-  document.getElementById('btn-force-sync').addEventListener('click', forceCloudSync);
-  document.getElementById('btn-disconnect-sync').addEventListener('click', disconnectCloudSync);
+  const btnGenerateSyncCode = document.getElementById('btn-generate-sync-code');
+  if (btnGenerateSyncCode) btnGenerateSyncCode.addEventListener('click', generateCloudSyncGroup);
+  
+  const btnConnectSyncCode = document.getElementById('btn-connect-sync-code');
+  if (btnConnectSyncCode) btnConnectSyncCode.addEventListener('click', connectToCloudSyncGroup);
+  
+  const btnForceSync = document.getElementById('btn-force-sync');
+  if (btnForceSync) btnForceSync.addEventListener('click', forceCloudSync);
+  
+  const btnDisconnectSync = document.getElementById('btn-disconnect-sync');
+  if (btnDisconnectSync) btnDisconnectSync.addEventListener('click', disconnectCloudSync);
 
   // --- MODAL NUEVA FINCA / IMPORTAR ---
   const modalFinca = document.getElementById('modal-finca');
@@ -1571,55 +1595,76 @@ function setupAdminEventListeners() {
   const modalOverlay = document.getElementById('modal-finca-overlay');
 
   const openFincaModal = () => {
-    document.getElementById('form-finca').reset();
-    document.getElementById('modal-finca-file-info').textContent = "Ningún archivo seleccionado.";
-    document.getElementById('modal-finca-file-info').style.color = "var(--text-muted)";
+    const formFinca = document.getElementById('form-finca');
+    if (formFinca) formFinca.reset();
+    const modalFincaFileInfo = document.getElementById('modal-finca-file-info');
+    if (modalFincaFileInfo) {
+      modalFincaFileInfo.textContent = "Ningún archivo seleccionado.";
+      modalFincaFileInfo.style.color = "var(--text-muted)";
+    }
     tempImportedFinca = null;
-    modalFinca.classList.add('active');
+    if (modalFinca) modalFinca.classList.add('active');
   };
 
   const closeModalFinca = () => {
-    modalFinca.classList.remove('active');
+    if (modalFinca) modalFinca.classList.remove('active');
   };
 
-  btnAddFinca.addEventListener('click', openFincaModal);
-  btnCloseFinca1.addEventListener('click', closeModalFinca);
-  btnCloseFinca2.addEventListener('click', closeModalFinca);
-  modalOverlay.addEventListener('click', closeModalFinca);
+  if (btnAddFinca) btnAddFinca.addEventListener('click', openFincaModal);
+  if (btnCloseFinca1) btnCloseFinca1.addEventListener('click', closeModalFinca);
+  if (btnCloseFinca2) btnCloseFinca2.addEventListener('click', closeModalFinca);
+  if (modalOverlay) modalOverlay.addEventListener('click', closeModalFinca);
 
-  document.getElementById('modal-finca-file').addEventListener('change', handleModalFileImport);
-  document.getElementById('form-finca').addEventListener('submit', handleModalFincaSubmit);
+  const modalFincaFile = document.getElementById('modal-finca-file');
+  if (modalFincaFile) modalFincaFile.addEventListener('change', handleModalFileImport);
+  
+  const formFinca = document.getElementById('form-finca');
+  if (formFinca) formFinca.addEventListener('submit', handleModalFincaSubmit);
 
   // --- CONTROLES DE DIBUJO ---
-  document.getElementById('btn-draw-pencil').addEventListener('click', toggleDrawingMode);
-  document.getElementById('btn-draw-clear').addEventListener('click', clearDrawing);
-  document.getElementById('btn-save-drawn').addEventListener('click', saveDrawnFinca);
-  document.getElementById('btn-export-drawn').addEventListener('click', exportDrawnFinca);
+  const btnDrawPencil = document.getElementById('btn-draw-pencil');
+  if (btnDrawPencil) btnDrawPencil.addEventListener('click', toggleDrawingMode);
+  
+  const btnDrawClear = document.getElementById('btn-draw-clear');
+  if (btnDrawClear) btnDrawClear.addEventListener('click', clearDrawing);
+  
+  const btnSaveDrawn = document.getElementById('btn-save-drawn');
+  if (btnSaveDrawn) btnSaveDrawn.addEventListener('click', saveDrawnFinca);
+  
+  const btnExportDrawn = document.getElementById('btn-export-drawn');
+  if (btnExportDrawn) btnExportDrawn.addEventListener('click', exportDrawnFinca);
 
   // Pantalla completa para el mapa de dibujo
   const fsBtn = document.getElementById('btn-draw-fullscreen');
   const mapWrapper = document.querySelector('.draw-map-wrapper');
-  fsBtn.addEventListener('click', () => {
-    const isFS = mapWrapper.classList.toggle('fullscreen');
-    if (isFS) {
-      fsBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"/></svg>';
-      fsBtn.title = "Salir de pantalla completa";
-    } else {
-      fsBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
-      fsBtn.title = "Pantalla completa";
-    }
-    setTimeout(() => {
-      if (adminMap) adminMap.invalidateSize();
-    }, 150);
-  });
+  if (fsBtn && mapWrapper) {
+    fsBtn.addEventListener('click', () => {
+      const isFS = mapWrapper.classList.toggle('fullscreen');
+      if (isFS) {
+        fsBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"/></svg>';
+        fsBtn.title = "Salir de pantalla completa";
+      } else {
+        fsBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
+        fsBtn.title = "Pantalla completa";
+      }
+      setTimeout(() => {
+        if (adminMap) adminMap.invalidateSize();
+      }, 150);
+    });
+  }
 
   // --- BUSCADOR GEOGRÁFICO ---
-  document.getElementById('btn-admin-search-submit').addEventListener('click', executeLocationSearch);
-  document.getElementById('input-admin-search').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      executeLocationSearch();
-    }
-  });
+  const btnAdminSearchSubmit = document.getElementById('btn-admin-search-submit');
+  if (btnAdminSearchSubmit) btnAdminSearchSubmit.addEventListener('click', executeLocationSearch);
+  
+  const inputAdminSearch = document.getElementById('input-admin-search');
+  if (inputAdminSearch) {
+    inputAdminSearch.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        executeLocationSearch();
+      }
+    });
+  }
 }
 
 // Renderizado de la lista de fincas en la pestaña Configuración
