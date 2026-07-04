@@ -1,0 +1,17 @@
+{
+  "name": "FincasSerrano",
+  "short_name": "FincasSerrano",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#1a2c1f",
+  "theme_color": "#3E5F48",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2913/2913520.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

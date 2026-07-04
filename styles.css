@@ -1,0 +1,1742 @@
+/* ==========================================
+   SISTEMA DE DISEÑO - FINCASERRANO
+   ========================================== */
+:root {
+  --primary: #3E5F48;          /* Verde Oliva profundo */
+  --primary-rgb: 62, 95, 72;
+  --primary-light: #E8EFEA;    /* Sage claro */
+  --primary-dark: #2A4232;
+  --accent: #8E7C68;           /* Tono Tierra / Madera */
+  --accent-light: #F4F1ED;
+  --bg: #F7F8F6;               /* Crema claro natural */
+  --card-bg: #ffffff;
+  --text: #2c322e;             /* Texto carbón suave */
+  --text-muted: #6e7871;
+  --border: #e2e8e4;
+  --border-light: #f0f4f1;
+  
+  /* Estados e Indicadores */
+  --success: #4A7C59;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+  
+  /* Sombras y Radios */
+  --radius-sm: 8px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 32px rgba(62, 95, 72, 0.08);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset General */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body, html {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Scrollbars elegantes */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Ocultar elementos visualmente pero mantenerlos para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ==========================================
+   CONTENEDOR DE LA APLICACIÓN (SPA)
+   ========================================== */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+/* Cabecera */
+.app-header {
+  background-color: var(--card-bg);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--primary);
+}
+
+.header-logo h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--border-light);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.green {
+  background-color: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+
+.status-dot.red {
+  background-color: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+
+.status-text {
+  color: var(--text-muted);
+}
+
+/* Área de contenido principal */
+.app-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  height: calc(100vh - 60px - 72px); /* Descontando header y nav */
+}
+
+/* Secciones individuales (Pestañas) */
+.app-section {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.app-section.active {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  z-index: 2;
+}
+
+/* ==========================================
+   NAVEGACIÓN INFERIOR (ESTILO APP)
+   ========================================== */
+.app-nav {
+  height: 72px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px 10px 10px; /* Margen inferior para comodidad táctil */
+  z-index: 10;
+  flex-shrink: 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.02);
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 12px;
+  transition: var(--transition);
+  font-family: inherit;
+  gap: 4px;
+  flex: 1;
+  max-width: 120px;
+}
+
+.nav-icon {
+  width: 22px;
+  height: 22px;
+  transition: var(--transition);
+}
+
+.nav-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.nav-item.active {
+  color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.nav-item.active .nav-icon {
+  transform: translateY(-2px);
+  stroke-width: 2.5;
+}
+
+/* Badge de notificaciones en el menú */
+.nav-icon-badge-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background-color: var(--danger);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--card-bg);
+}
+
+/* ==========================================
+   COMPONENTES DE BOTONES Y FORMULARIOS
+   ========================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  gap: 8px;
+  outline: none;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(62, 95, 72, 0.2);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-secondary {
+  background-color: var(--border-light);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-secondary-icon {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary-icon:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.btn-card-action {
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  background-color: var(--border-light);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.btn-card-action:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-card-action.btn-route {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border-color: transparent;
+}
+
+.btn-card-action.btn-route:hover {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-card-action.btn-status-toggle {
+  background-color: var(--border-light);
+  color: var(--text);
+}
+
+.btn-card-action.btn-status-toggle.resolved {
+  background-color: #E8F5E9;
+  color: var(--success);
+  border-color: #C8E6C9;
+}
+
+.w-full { width: 100%; }
+.flex-1 { flex: 1; }
+
+.icon-btn-left {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-sm {
+  width: 20px;
+  height: 20px;
+}
+
+/* Selectores y Campos de texto */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--text-muted);
+  pointer-events: none;
+}
+
+.form-select, .form-input {
+  width: 100%;
+  padding: 12px 36px 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--card-bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  outline: none;
+  transition: var(--transition);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.form-input {
+  padding-right: 16px;
+}
+
+.form-select:focus, .form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(62, 95, 72, 0.12);
+  background-color: var(--card-bg);
+}
+
+.text-area {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-help-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: -8px;
+  margin-bottom: 12px;
+}
+
+/* ==========================================
+   SECCIÓN 1: FINCAS (MAPA)
+   ========================================== */
+.fincas-control-bar {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.map-wrapper {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Controles Flotantes del Mapa */
+.map-floating-controls {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.map-btn:hover {
+  background: white;
+  transform: scale(1.05);
+  color: var(--primary-dark);
+}
+
+.map-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Toast flotante de ayuda en el mapa */
+.map-help-toast {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(44, 50, 46, 0.85);
+  backdrop-filter: blur(6px);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+  text-align: center;
+  width: max-content;
+  max-width: 90%;
+  animation: pulseToast 2s infinite ease-in-out;
+}
+
+@keyframes pulseToast {
+  0%, 100% { opacity: 0.9; transform: translate(-50%, 0) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -2px) scale(1.02); }
+}
+
+/* Customización visual de marcadores Leaflet */
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius);
+  padding: 6px;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.leaflet-popup-content h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.leaflet-popup-content p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Marcador de usuario GPS pulsante */
+.gps-user-marker {
+  width: 20px;
+  height: 20px;
+  background-color: var(--info);
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--info);
+  position: relative;
+}
+
+.gps-user-marker::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid var(--info);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: pulseGps 1.8s infinite ease-out;
+}
+
+@keyframes pulseGps {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Clases para limpiar marcadores Leaflet */
+.custom-marker-wrapper, .gps-user-marker-wrapper {
+  background: none !important;
+  border: none !important;
+}
+
+/* Colores de Marcadores de Incidencias */
+.marker-pin {
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--primary);
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -16px 0 0 -16px;
+  border: 2px solid white;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-pin::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+}
+
+.marker-pin.resuelta { background: #9E9E9E; }
+
+/* ==========================================
+   SECCIÓN 2: LISTA DE INCIDENCIAS
+   ========================================== */
+.filters-bar {
+  background-color: var(--card-bg);
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input-wrapper .form-input {
+  padding-left: 44px;
+}
+
+.filters-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.filters-row .select-wrapper {
+  min-width: 0; /* Permite comprimir en flexbox */
+}
+
+.filters-row .form-select {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.incidencias-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Tarjetas de Incidencia */
+.incidencia-card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.incidencia-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--primary-light);
+}
+
+/* Borde izquierdo decorativo */
+.incidencia-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background-color: var(--primary);
+}
+
+/* Cabecera de la tarjeta */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-finca-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  background-color: var(--primary-light);
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Badges de Estado y Prioridad */
+.badge-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+
+
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.status-badge.pendiente { background-color: #ECEFF1; color: #546E7A; }
+.status-badge.resuelta { background-color: #E8F5E9; color: var(--success); }
+
+/* Descripción */
+.card-body {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: pre-wrap; /* Mantiene saltos de línea */
+}
+
+/* Acciones */
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 12px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* Estado Vacío */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  gap: 12px;
+  flex: 1;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--border);
+  margin-bottom: 8px;
+}
+
+.empty-state h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.empty-state p {
+  font-size: 0.85rem;
+  max-width: 250px;
+}
+
+/* ==========================================
+   SECCIÓN 3: CONFIGURACIÓN Y BACKUP
+   ========================================== */
+.ajustes-container {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.settings-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.backup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Lista de Fincas en Configuración */
+.fincas-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg);
+  padding: 6px;
+  margin-bottom: 6px;
+}
+
+.finca-settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-light);
+}
+
+.finca-info-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.finca-info-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.finca-info-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.btn-delete-finca {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-finca:hover {
+  background-color: #FFEBEE;
+}
+
+/* ==========================================
+   MODALES (VENTANAS EMERGENTES)
+   ========================================== */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  display: none;
+  align-items: flex-end; /* Móvil: se abre desde abajo */
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(44, 50, 46, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+  width: 100%;
+  max-height: 90%;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  font-weight: 300;
+  cursor: pointer;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background-color: var(--border-light);
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background-color: var(--border-light);
+}
+
+/* Vista previa de coordenadas en modal */
+.coordinates-preview {
+  background-color: var(--accent-light);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-family: monospace;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* Grupo de radios estilizado para prioridad */
+.radio-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.radio-label {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.radio-label input[type="radio"] {
+  display: none;
+}
+
+/* Resaltar selección de prioridad */
+.radio-label.priority-baja input:checked + span { color: var(--success); }
+.radio-label.priority-baja input:checked { }
+.radio-label.priority-baja:has(input:checked) {
+  border-color: var(--success);
+  background-color: #E8F5E9;
+}
+
+.radio-label.priority-media input:checked + span { color: var(--warning); }
+.radio-label.priority-media:has(input:checked) {
+  border-color: var(--warning);
+  background-color: #FFF3E0;
+}
+
+.radio-label.priority-alta input:checked + span { color: var(--danger); }
+.radio-label.priority-alta:has(input:checked) {
+  border-color: var(--danger);
+  background-color: #FFEBEE;
+}
+
+/* Animaciones del Modal */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ==========================================
+   OPTIMIZACIONES PARA COMPUTADORAS / PANTALLA ANCHA
+   ========================================== */
+@media (min-width: 768px) {
+  /* Modificamos el modal para que flote en el centro */
+  .modal {
+    align-items: center;
+  }
+  
+  .modal-container {
+    width: 500px;
+    border-radius: var(--radius-lg);
+    max-height: 85%;
+  }
+  
+  /* Cabecera horizontal para desktop */
+  .app-header {
+    padding: 12px 40px;
+  }
+  
+  /* Ajustes en cuadrícula */
+  .ajustes-container {
+    max-width: 800px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  
+  .settings-card:first-child {
+    grid-column: span 2;
+  }
+  
+  /* Barra de filtros en horizontal */
+  .filters-bar {
+    flex-direction: row;
+    align-items: center;
+    padding: 16px 40px;
+    gap: 16px;
+  }
+  
+  .search-input-wrapper {
+    flex: 2;
+  }
+  
+  .filters-row {
+    flex: 3;
+    gap: 12px;
+  }
+  
+  .incidencias-list {
+    padding: 20px 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    align-content: flex-start;
+  }
+
+  .incidencias-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  /* Control de Fincas centrado en desktop */
+  .fincas-control-bar {
+    padding: 12px 40px;
+  }
+
+  .select-wrapper {
+    width: 300px;
+  }
+
+  /* Menú de navegación */
+  .app-nav {
+    height: 64px;
+    padding: 0 40px;
+  }
+
+  .nav-item {
+    max-width: 160px;
+    flex-direction: row;
+    gap: 10px;
+    padding: 10px 20px;
+  }
+  
+  .nav-label {
+    font-size: 0.85rem;
+  }
+}
+
+/* Botón pequeño en la barra de navegación para Administración (muñequito) */
+.nav-item-small {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 8px;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.nav-item-small:hover, .nav-item-small.active {
+  color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.nav-icon-small {
+  width: 20px;
+  height: 20px;
+}
+
+/* Pestañas de administración */
+.admin-tabs {
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  padding: 0 16px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-tab-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 14px 18px;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition);
+}
+
+.admin-tab-btn.active {
+  color: var(--primary);
+}
+
+.admin-tab-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--primary);
+  transform: scaleX(0);
+  transition: var(--transition);
+}
+
+.admin-tab-btn.active::after {
+  transform: scaleX(1);
+}
+
+/* Contenedor del panel administrativo */
+.admin-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-tab-content {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-tab-content.active {
+  display: flex;
+}
+
+/* Buscador en administración */
+.search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 1010;
+  max-height: 180px;
+  overflow-y: auto;
+  display: none;
+  margin-top: 4px;
+}
+
+.search-results-item {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+
+.search-results-item:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+/* Mapa de dibujo y controles flotantes */
+.draw-map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 240px; /* Altura más baja por defecto en móviles para dejar espacio para scroll */
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+@media (min-width: 768px) {
+  .draw-map-wrapper {
+    height: 380px; /* Altura más grande en escritorio */
+  }
+}
+
+.draw-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.draw-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  outline: none;
+}
+
+.draw-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.draw-btn:hover:not(.active) {
+  background-color: var(--border-light);
+}
+
+.draw-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.draw-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.draw-status-indicator {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(44, 50, 46, 0.9);
+  backdrop-filter: blur(6px);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+  width: max-content;
+  max-width: 90%;
+  text-align: center;
+}
+
+.save-drawn-finca-card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--primary-light);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Toast de Deshacer */
+.undo-toast {
+  position: fixed;
+  bottom: -100px; /* Completamente fuera de la pantalla por defecto */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(44, 50, 46, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.undo-toast.active {
+  bottom: 96px; /* Flota de forma segura por encima de la barra de navegación */
+}
+
+.btn-undo-action {
+  background: none;
+  border: none;
+  color: var(--primary-light);
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.btn-undo-action:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Botón de Completar (Tick) en Tarjetas */
+.btn-complete-tick {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: white;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  outline: none;
+}
+
+.btn-complete-tick:hover {
+  border-color: var(--success);
+  color: var(--success);
+  background-color: var(--primary-light);
+  transform: scale(1.1);
+}
+
+.btn-complete-tick.ticked {
+  border-color: var(--success);
+  background-color: var(--success);
+  color: white !important;
+  transform: scale(0.9);
+}
+
+.btn-complete-tick svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Modo pantalla completa para el mapa de dibujo */
+.draw-map-wrapper.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999; /* Por encima de todo, cabecera y barra de navegación */
+  border-radius: 0;
+  border: none;
+}
+
+/* BOTÓN FLOTANTE DEL ASISTENTE DE VOZ */
+.btn-voice-floating {
+  position: fixed;
+  bottom: 140px; /* Subido para evitar superposiciones */
+  right: 16px; /* Posicionado a la derecha de forma limpia */
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  cursor: pointer;
+  z-index: 999;
+  transition: var(--transition);
+}
+.btn-voice-floating:hover {
+  transform: scale(1.05);
+  background: #324d3a;
+}
+.btn-voice-floating svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* OVERLAY DEL ASISTENTE DE VOZ */
+.voice-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(44, 50, 46, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 24px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.voice-overlay.active {
+  display: flex;
+}
+.voice-assistant-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-light);
+  margin-bottom: 24px;
+}
+.voice-assistant-step {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.voice-assistant-prompt {
+  font-size: 1.25rem;
+  font-weight: 500;
+  max-width: 500px;
+  line-height: 1.4;
+  margin-bottom: 40px;
+  min-height: 80px;
+}
+.voice-assistant-wave {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40px;
+  position: relative;
+  box-shadow: 0 0 30px rgba(78, 110, 87, 0.4);
+}
+.voice-assistant-wave::after,
+.voice-assistant-wave::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--primary-light);
+  opacity: 0.3;
+  animation: wave-pulse 2s infinite;
+}
+.voice-assistant-wave::before {
+  animation-delay: 0.5s;
+}
+.voice-assistant-wave svg {
+  width: 48px;
+  height: 48px;
+  color: white;
+  z-index: 2;
+}
+.voice-assistant-transcript {
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--primary-light);
+  min-height: 40px;
+  max-width: 400px;
+  margin-bottom: 40px;
+}
+.voice-assistant-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.voice-assistant-close:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+@keyframes wave-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* SUB-PESTAÑAS DE LISTA DE COMPRA */
+.compra-tab-btn.active {
+  background-color: var(--primary-light) !important;
+  color: var(--primary) !important;
+}
+
+/* LISTA DE COMPRA ITEMS */
+.compra-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.compra-item.checked span {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* Ocultar botones de zoom (+/-) de Leaflet solo en móviles */
+@media (max-width: 768px) {
+  .leaflet-control-zoom {
+    display: none !important;
+  }
+}
+
+/* Pantalla de acceso general */
+.web-access-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #233629, #111a14);
+  z-index: 200000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.web-access-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 30px 24px;
+  border-radius: var(--radius-lg);
+  max-width: 360px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  box-sizing: border-box;
+}
+
+.web-access-logo {
+  width: 64px;
+  height: 64px;
+  background: rgba(163, 255, 163, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: var(--primary-light);
+}
+
+.web-access-card h2 {
+  font-size: 1.4rem;
+  color: var(--text);
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+.web-access-card p {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0 0 24px 0;
+  line-height: 1.4;
+}
+
+
+
+
+

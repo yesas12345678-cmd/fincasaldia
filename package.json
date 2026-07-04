@@ -1,0 +1,17 @@
+{
+  "name": "fincasserrano",
+  "version": "1.0.0",
+  "description": "Aplicación web estática para gestión de fincas agrícolas e incidencias geolocalizadas.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8080 -c-1"
+  },
+  "keywords": [
+    "agriculture",
+    "leaflet",
+    "geolocation",
+    "netlify"
+  ],
+  "author": "FincasSerrano",
+  "license": "ISC"
+}
