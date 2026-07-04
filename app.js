@@ -3270,7 +3270,7 @@ function showGiantStartTarget() {
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:40px; height:40px; color:#a3ffa3;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
     </div>
     <h2 style="font-size: 1.6rem; font-weight: 700; margin: 0 0 12px 0; color: #a3ffa3;">Asistente Manos Libres</h2>
-    <p style="font-size: 1.05rem; line-height: 1.4; color: #d0ded4; max-width: 320px; margin: 0;">Toca en cualquier parte de la pantalla para empezar a dictar.</p>
+    <p style="font-size: 1.05rem; line-height: 1.4; color: #d0ded4; max-width: 320px; margin: 0;">Toca para iniciar el asistente.</p>
   `;
   
   overlay.addEventListener('click', () => {
