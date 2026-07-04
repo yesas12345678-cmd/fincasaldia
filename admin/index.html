@@ -362,15 +362,19 @@
               </div>
               <div>
                 <h3 style="margin-top: 0;">Crear Nueva Cuenta</h3>
-                <p class="settings-desc">Escribe un nombre/usuario para la nueva cuenta y pulsa Crear.</p>
-                <div style="display: flex; gap: 8px;">
-                  <input type="text" id="input-new-account-code" class="form-input" placeholder="Ej. manolillo, rural2" style="text-transform: lowercase;">
+                <p class="settings-desc">Escribe el usuario y la contraseña para la nueva cuenta.</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <input type="text" id="input-new-account-code" class="form-input" placeholder="Usuario (ej. manolillo, rural2)" style="text-transform: lowercase;">
+                  <input type="password" id="input-new-account-pass" class="form-input" placeholder="Contraseña de la cuenta">
                   <button id="btn-create-account" class="btn btn-primary">Crear Cuenta</button>
                 </div>
               </div>
             </div>
-            <div id="active-account-indicator" style="font-size: 0.9rem; font-weight: 700; color: var(--primary); padding: 8px 12px; background: rgba(78, 110, 87, 0.08); border-radius: var(--radius-sm); border: 1px solid var(--primary-light); text-align: center; display: none;">
-              Editando la cuenta: <span id="text-editing-account" style="color: var(--accent); font-family: monospace; font-size: 1rem;">daedcfc</span>
+            <div id="active-account-indicator" style="font-size: 0.9rem; font-weight: 700; color: var(--primary); padding: 8px 12px; background: rgba(78, 110, 87, 0.08); border-radius: var(--radius-sm); border: 1px solid var(--primary-light); text-align: center; display: none; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+              <span>Editando cuenta: <span id="text-editing-account" style="color: var(--accent); font-family: monospace; font-size: 1rem;">daedcfc</span></span>
+              <span>| Contraseña: <span id="text-editing-password" style="color: var(--accent); font-family: monospace; font-size: 1rem;">---</span></span>
+              <button id="btn-change-account-password" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; line-height: 1;">Cambiar Contraseña</button>
+              <button id="btn-delete-active-account" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.75rem; line-height: 1; background-color: var(--danger); border-color: var(--danger); color: white;">Eliminar Cuenta</button>
             </div>
           </div>
 

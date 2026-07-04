@@ -30,12 +30,13 @@
     <div class="login-card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; display: flex; flex-direction: column; gap: 16px;">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="login-logo-icon" style="width: 48px; height: 48px; color: #3E5F48; margin: 0 auto;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><circle cx="12" cy="12" r="3"/></svg>
       <h2 style="font-size: 1.5rem; font-weight: 700; color: #3E5F48; margin: 0;">Fincas al Día</h2>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Introduce tu código de cuenta para acceder al mapa y gestión de incidencias.</p>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Introduce tu usuario y contraseña para acceder al mapa y gestión de incidencias.</p>
       
       <form id="form-user-login" style="display: flex; flex-direction: column; gap: 12px;">
-        <div class="form-group" style="margin-bottom: 0;">
-          <input type="text" id="user-login-code" class="form-input" placeholder="Código de tu cuenta" style="text-align: center; text-transform: lowercase; font-weight: 600; letter-spacing: 0.5px;" required>
-          <div id="user-login-error" class="login-error-text" style="display: none; color: var(--danger); font-size: 0.8rem; font-weight: 600; margin-top: 4px;">Código de cuenta incorrecto o inexistente</div>
+        <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 8px;">
+          <input type="text" id="user-login-code" class="form-input" placeholder="Usuario de la cuenta" style="text-transform: lowercase; font-weight: 500;" required>
+          <input type="password" id="user-login-password" class="form-input" placeholder="Contraseña" style="font-weight: 500;" required>
+          <div id="user-login-error" class="login-error-text" style="display: none; color: var(--danger); font-size: 0.8rem; font-weight: 600; margin-top: 4px;">Usuario o contraseña incorrectos</div>
         </div>
         <button type="submit" id="btn-user-login-submit" class="btn btn-primary w-full" style="margin-top: 8px;">Entrar a la Aplicación</button>
       </form>

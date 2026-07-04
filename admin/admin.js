@@ -151,10 +151,11 @@ function selectAccount(code) {
   selectedAccount = code;
   sessionStorage.setItem('fs_selected_account', code);
   
-  document.getElementById('active-account-indicator').style.display = 'block';
+  document.getElementById('active-account-indicator').style.display = 'flex';
   document.getElementById('text-editing-account').textContent = code;
   
-  fetch(getCloudSyncUrl(code))
+  // Usar contraseña de admin para cargar los datos de cualquier cuenta
+  fetch(getCloudSyncUrl(code) + '&admin_password=Manuel1214$')
   .then(res => {
     if (!res.ok) throw new Error("No se pudo cargar la cuenta");
     return res.json();
@@ -162,6 +163,9 @@ function selectAccount(code) {
   .then(cloudData => {
     appState = cloudData;
     appState.syncCode = code;
+    
+    // Mostrar la contraseña
+    document.getElementById('text-editing-password').textContent = appState.password || 'Sin contraseña';
     
     if (!appState.folders || appState.folders.length === 0) {
       appState.folders = [
@@ -197,7 +201,9 @@ function disableAdminControls(disabled) {
     'btn-draw-clear',
     'input-new-folder',
     'input-admin-search',
-    'btn-admin-search-submit'
+    'btn-admin-search-submit',
+    'btn-change-account-password',
+    'btn-delete-active-account'
   ];
   
   btns.forEach(id => {
@@ -210,49 +216,51 @@ function disableAdminControls(disabled) {
 
 function createNewAccount() {
   const input = document.getElementById('input-new-account-code');
+  const passInput = document.getElementById('input-new-account-pass');
   const code = input.value.trim().toLowerCase();
-  if (!code) {
-    alert("Introduce un código de cuenta válido.");
+  const password = passInput.value.trim();
+  
+  if (!code || !password) {
+    alert("Introduce un nombre de usuario y una contraseña válidos.");
     return;
   }
   
   if (!/^[a-z0-9_-]+$/.test(code)) {
-    alert("El código de la cuenta solo puede contener letras, números, guiones y barras bajas.");
+    alert("El usuario de la cuenta solo puede contener letras, números, guiones y barras bajas.");
     return;
   }
   
-  fetch(getCloudSyncUrl(code))
+  const initialState = {
+    fincas: [],
+    incidencias: [],
+    folders: [
+      { id: 'folder-huescar', name: 'Huéscar' },
+      { id: 'folder-baza', name: 'Baza' }
+    ],
+    shoppingList: [],
+    checkedIncidentSupplies: [],
+    syncCode: code,
+    password: password,
+    lastUpdated: Date.now()
+  };
+  
+  fetch(getCloudSyncUrl('', 'create') + `&new_code=${code}&new_password=${encodeURIComponent(password)}&admin_password=Manuel1214$`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(initialState)
+  })
   .then(res => {
-    if (res.status === 200) {
-      alert("Esta cuenta ya existe. Elige otro nombre.");
+    if (res.status === 409) {
+      alert("Esta cuenta ya existe. Elige otro nombre de usuario.");
       return;
     }
+    if (!res.ok) throw new Error("Error al crear cuenta");
     
-    const initialState = {
-      fincas: [],
-      incidencias: [],
-      folders: [
-        { id: 'folder-huescar', name: 'Huéscar' },
-        { id: 'folder-baza', name: 'Baza' }
-      ],
-      shoppingList: [],
-      checkedIncidentSupplies: [],
-      syncCode: code,
-      lastUpdated: Date.now()
-    };
-    
-    return fetch(getCloudSyncUrl(code), {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(initialState)
-    })
-    .then(createRes => {
-      if (!createRes.ok) throw new Error("Error al crear cuenta");
-      alert(`¡Cuenta "${code}" creada con éxito!`);
-      input.value = '';
-      loadAccountsList();
-      selectAccount(code);
-    });
+    alert(`¡Cuenta "${code}" creada con éxito!`);
+    input.value = '';
+    passInput.value = '';
+    loadAccountsList();
+    selectAccount(code);
   })
   .catch(err => {
     console.error(err);
@@ -283,7 +291,8 @@ function saveData() {
   if (!selectedAccount) return;
   appState.lastUpdated = Date.now();
   
-  fetch(getCloudSyncUrl(selectedAccount), {
+  // Guardar usando el bypass del administrador para que se valide correctamente en el servidor
+  fetch(getCloudSyncUrl(selectedAccount) + '&admin_password=Manuel1214$', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(appState)
@@ -295,6 +304,59 @@ function saveData() {
   .catch(err => {
     console.error(err);
     alert("Atención: No se han podido guardar los cambios en la base de datos de la nube. Comprueba tu conexión.");
+  });
+}
+
+function changeActiveAccountPassword() {
+  if (!selectedAccount) return;
+  
+  const currentPass = appState.password || '';
+  const newPass = prompt("Introduce la nueva contraseña para esta cuenta:", currentPass);
+  
+  if (newPass === null) return;
+  
+  const trimmed = newPass.trim();
+  if (!trimmed) {
+    alert("La contraseña no puede estar vacía.");
+    return;
+  }
+  
+  appState.password = trimmed;
+  saveData();
+  
+  document.getElementById('text-editing-password').textContent = trimmed;
+  alert("Contraseña actualizada con éxito.");
+}
+
+function deleteActiveAccount() {
+  if (!selectedAccount) return;
+  
+  const validation = prompt(
+    `🚨 PELIGRO DE BORRADO DE CUENTA 🚨\n\n` +
+    `Estás a punto de ELIMINAR COMPLETAMENTE la cuenta de usuario "${selectedAccount}".\n` +
+    `Esta acción borrará de forma irreversible el usuario, su contraseña y todos sus datos de fincas, lindes e incidencias en el servidor.\n\n` +
+    `Para confirmar que realmente deseas BORRAR esta cuenta, escribe el nombre de la cuenta ("${selectedAccount}") a continuación:`
+  );
+  
+  if (validation === null) return;
+  
+  if (validation.trim().toLowerCase() !== selectedAccount.toLowerCase()) {
+    alert("Confirmación incorrecta. La cuenta NO ha sido eliminada.");
+    return;
+  }
+  
+  fetch(getCloudSyncUrl(selectedAccount, 'delete') + '&admin_password=Manuel1214$', {
+    method: 'POST'
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al eliminar la cuenta");
+    alert(`La cuenta "${selectedAccount}" ha sido eliminada con éxito del sistema.`);
+    selectAccount('');
+    loadAccountsList();
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error al eliminar la cuenta del servidor.");
   });
 }
 
@@ -452,6 +514,12 @@ function setupEventListeners() {
 
   // Botón crear nueva cuenta
   document.getElementById('btn-create-account').addEventListener('click', createNewAccount);
+
+  // Botón cambiar contraseña de cuenta activa
+  document.getElementById('btn-change-account-password').addEventListener('click', changeActiveAccountPassword);
+
+  // Botón eliminar cuenta activa
+  document.getElementById('btn-delete-active-account').addEventListener('click', deleteActiveAccount);
 
   // Botón crear carpeta
   document.getElementById('btn-create-folder').addEventListener('click', createFolderAction);
@@ -1022,23 +1090,42 @@ function importBackup(e) {
 
 // Restablecer aplicación completa
 function resetDatabase() {
-  if (confirm("¿Estás seguro de restablecer esta cuenta? Se eliminarán todas las fincas, lindes e incidencias y se restaurarán las carpetas predeterminadas (Huéscar y Baza).")) {
-    appState = {
-      fincas: [],
-      incidencias: [],
-      folders: [
-        { id: 'folder-huescar', name: 'Huéscar' },
-        { id: 'folder-baza', name: 'Baza' }
-      ],
-      shoppingList: [],
-      checkedIncidentSupplies: [],
-      syncCode: selectedAccount,
-      lastUpdated: Date.now()
-    };
-    saveData();
-    renderFincasSettingsList();
-    renderFoldersSettingsList();
-    populateFolderSelects();
-    alert("Cuenta restablecida con éxito.");
+  if (!selectedAccount) {
+    alert("No hay ninguna cuenta seleccionada.");
+    return;
   }
+  
+  const validation = prompt(
+    `🚨 ATENCIÓN 🚨\n\n` +
+    `Esto eliminará de forma IRREVERSIBLE todas las fincas, lindes e incidencias de la cuenta "${selectedAccount}".\n` +
+    `Se restaurarán únicamente las carpetas predeterminadas (Huéscar y Baza).\n\n` +
+    `Para confirmar esta acción de borrado, escribe el nombre de la cuenta ("${selectedAccount}") a continuación:`
+  );
+  
+  if (validation === null) return;
+  
+  if (validation.trim().toLowerCase() !== selectedAccount.toLowerCase()) {
+    alert("Confirmación incorrecta. La cuenta NO ha sido restablecida.");
+    return;
+  }
+  
+  appState = {
+    fincas: [],
+    incidencias: [],
+    folders: [
+      { id: 'folder-huescar', name: 'Huéscar' },
+      { id: 'folder-baza', name: 'Baza' }
+    ],
+    shoppingList: [],
+    checkedIncidentSupplies: [],
+    syncCode: selectedAccount,
+    password: appState.password,
+    lastUpdated: Date.now()
+  };
+  
+  saveData();
+  renderFincasSettingsList();
+  renderFoldersSettingsList();
+  populateFolderSelects();
+  alert("Cuenta restablecida con éxito.");
 }

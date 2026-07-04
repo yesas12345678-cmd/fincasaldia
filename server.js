@@ -50,46 +50,83 @@ app.use('/api/sync', async (req, res) => {
       return res.json(dbRes.rows);
     }
 
-    // 2. CREACIÓN DE GRUPO NUEVO (POST sin código)
-    if (!code && req.method === "POST") {
-      const payload = JSON.parse(req.body);
+    // ELIMINAR CUENTA COMPLETA (Solo administrador)
+    if (action === 'delete') {
+      const adminPass = req.query.admin_password;
+      if (adminPass !== 'Manuel1214$') {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      if (!code) {
+        return res.status(400).json({ error: "Missing code parameter" });
+      }
+      await client.query('DELETE FROM sync_groups WHERE code = $1', [code]);
+      return res.json({ success: true });
+    }
+
+    // 2. CREACIÓN DE GRUPO NUEVO (POST con action=create)
+    if (action === 'create') {
+      const adminPass = req.query.admin_password;
+      if (adminPass !== 'Manuel1214$') {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
       
-      let uniqueCode = '';
-      let exists = true;
-      while (exists) {
-        uniqueCode = Math.random().toString(36).substring(2, 9).toLowerCase();
-        const check = await client.query('SELECT 1 FROM sync_groups WHERE code = $1', [uniqueCode]);
-        if (check.rows.length === 0) {
-          exists = false;
-        }
+      const newCode = req.query.new_code.trim().toLowerCase();
+      const newPassword = req.query.new_password;
+      
+      const check = await client.query('SELECT 1 FROM sync_groups WHERE code = $1', [newCode]);
+      if (check.rows.length > 0) {
+        return res.status(409).json({ error: "Account already exists" });
       }
 
-      const lastUpdated = payload.lastUpdated || Date.now();
+      const payload = JSON.parse(req.body);
+      payload.password = newPassword;
+      payload.syncCode = newCode;
+      
+      const lastUpdated = Date.now();
       await client.query(
         'INSERT INTO sync_groups (code, data, last_updated) VALUES ($1, $2, $3)',
-        [uniqueCode, JSON.stringify(payload), lastUpdated]
+        [newCode, JSON.stringify(payload), lastUpdated]
       );
 
-      return res.json({ id: uniqueCode });
+      return res.json({ success: true, code: newCode });
     }
 
     if (!code) {
       return res.status(400).json({ error: "Missing code parameter" });
     }
 
+    // Obtener datos existentes para verificación de seguridad
+    const dbRes = await client.query('SELECT data FROM sync_groups WHERE code = $1', [code]);
+    if (dbRes.rows.length === 0) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    const groupData = dbRes.rows[0].data;
+    const clientPassword = req.query.password;
+    const adminPassword = req.query.admin_password;
+
+    // Validar contraseña
+    const isAuthorized = (clientPassword && clientPassword === groupData.password) || 
+                         (adminPassword && adminPassword === 'Manuel1214$');
+
+    if (!isAuthorized) {
+      return res.status(401).json({ error: "Incorrect user password" });
+    }
+
     // 3. OBTENER DATOS (GET con código)
     if (req.method === "GET") {
-      const dbRes = await client.query('SELECT data FROM sync_groups WHERE code = $1', [code]);
-      if (dbRes.rows.length > 0) {
-        return res.json(dbRes.rows[0].data);
-      } else {
-        return res.status(404).json({ error: "Group not found" });
-      }
+      return res.json(groupData);
     }
 
     // 4. ACTUALIZAR DATOS (POST con código)
     if (req.method === "POST") {
       const payload = JSON.parse(req.body);
+      
+      // Mantener la contraseña
+      if (!payload.password) {
+        payload.password = groupData.password;
+      }
+      
       const lastUpdated = payload.lastUpdated || Date.now();
       
       await client.query(`

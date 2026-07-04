@@ -799,20 +799,23 @@ function setupEventListeners() {
     loginForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const codeInput = document.getElementById('user-login-code');
+      const passwordInput = document.getElementById('user-login-password');
       const errorDiv = document.getElementById('user-login-error');
       const submitBtn = document.getElementById('btn-user-login-submit');
       
       const code = codeInput.value.trim().toLowerCase();
-      if (!code) return;
+      const password = passwordInput.value.trim();
+      if (!code || !password) return;
       
       submitBtn.disabled = true;
       submitBtn.textContent = "Verificando...";
       errorDiv.style.display = 'none';
       
-      fetch(getCloudSyncUrl(code))
+      // Pasar la contraseña directamente en el URL de login para verificarla
+      fetch(getCloudSyncUrl(code, password))
       .then(res => {
         if (!res.ok) {
-          throw new Error("No existe esta cuenta");
+          throw new Error("Usuario o contraseña incorrectos");
         }
         return res.json();
       })
@@ -820,6 +823,11 @@ function setupEventListeners() {
         if (cloudData && cloudData.fincas) {
           appState = cloudData;
           appState.syncCode = code;
+          
+          // Guardar credenciales locales
+          localStorage.setItem('fh_sync_code', code);
+          localStorage.setItem('fh_sync_password', password);
+          
           sanitizeData();
           saveData();
           
@@ -841,8 +849,8 @@ function setupEventListeners() {
       .catch(err => {
         console.error(err);
         errorDiv.style.display = 'block';
-        codeInput.value = '';
-        codeInput.focus();
+        passwordInput.value = '';
+        passwordInput.focus();
       })
       .finally(() => {
         submitBtn.disabled = false;
@@ -858,6 +866,7 @@ function setupEventListeners() {
       if (confirm("¿Estás seguro de que quieres cerrar sesión?")) {
         appState.syncCode = '';
         localStorage.removeItem('fh_sync_code');
+        localStorage.removeItem('fh_sync_password');
         checkUserSession();
       }
     });
@@ -2939,14 +2948,15 @@ window.toggleIncidentSupply = toggleIncidentSupply;
 // --- FUNCIONES DE SINCRONIZACIÓN EN LA NUBE ---
 
 // Obtener URL de la API de sincronización para evitar CORS preflight
-function getCloudSyncUrl(code = '') {
+function getCloudSyncUrl(code = '', overridePassword = '') {
   const isLocal = window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1' || 
                   window.location.hostname.startsWith('192.168.') || 
                   window.location.hostname.startsWith('172.20.') ||
                   window.location.hostname.startsWith('10.');
   const base = isLocal ? 'https://fincasaldia.com' : '';
-  return `${base}/api/sync${code ? '?code=' + code : ''}`;
+  const password = overridePassword || localStorage.getItem('fh_sync_password') || '';
+  return `${base}/api/sync${code ? '?code=' + code + '&password=' + encodeURIComponent(password) : ''}`;
 }
 
 function updateCloudSyncUI() {
