@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fincas-serrano-v12';
+const CACHE_NAME = 'fincas-serrano-v14';
 const ASSETS = [
   '/',
   '/index.html',
@@ -14,11 +14,26 @@ self.addEventListener('install', (e) => {
       return cache.addAll(ASSETS);
     })
   );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (e) => {
   // No interceptar peticiones de la función serverless para evitar conflictos
-  if (e.request.url.includes('/.netlify/functions/')) {
+  if (e.request.url.includes('/api/sync') || e.request.url.includes('/.netlify/functions/')) {
     return;
   }
   
