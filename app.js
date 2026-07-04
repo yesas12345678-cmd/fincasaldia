@@ -747,6 +747,7 @@ function getIncidenciaIcon(tipo) {
 // Renderizar la lista de fincas en la pestaña de Ajustes
 function renderFincasSettingsList() {
   const container = document.getElementById('fincas-settings-list');
+  if (!container) return;
   container.innerHTML = '';
   
   appState.fincas.forEach(finca => {
@@ -786,10 +787,20 @@ function updateIncidenciasBadge() {
 // Validar y controlar la visualización de la sesión de usuario
 function checkUserSession() {
   const loginPanel = document.getElementById('login-panel');
+  const userDisplayName = document.getElementById('user-display-name');
+  
   if (!appState.syncCode) {
     if (loginPanel) loginPanel.style.display = 'flex';
+    if (userDisplayName) {
+      userDisplayName.style.display = 'none';
+      userDisplayName.textContent = '';
+    }
   } else {
     if (loginPanel) loginPanel.style.display = 'none';
+    if (userDisplayName) {
+      userDisplayName.style.display = 'inline-block';
+      userDisplayName.textContent = appState.syncCode;
+    }
   }
 }
 
@@ -1670,6 +1681,7 @@ function setupAdminEventListeners() {
 // Renderizado de la lista de fincas en la pestaña Configuración
 function renderFincasSettingsList() {
   const container = document.getElementById('fincas-settings-list');
+  if (!container) return;
   container.innerHTML = '';
   
   if (appState.fincas.length === 0) {
