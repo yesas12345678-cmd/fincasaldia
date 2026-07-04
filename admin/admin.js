@@ -313,6 +313,14 @@ function renderFincasSettingsList() {
     const boundaryTag = hasBoundary ? 'Linde dibujada' : 'Solo coordenadas';
     const boundaryStyle = hasBoundary ? 'color: var(--primary); font-weight:600;' : 'color: var(--text-muted);';
     
+    // Generar opciones de carpeta
+    let folderOptions = '';
+    if (!appState.folders) appState.folders = [];
+    appState.folders.forEach(folder => {
+      const selected = (finca.folderId === folder.id) ? 'selected' : '';
+      folderOptions += `<option value="${folder.id}" ${selected}>📂 ${folder.name}</option>`;
+    });
+    
     item.innerHTML = `
       <div class="finca-info-group">
         <span class="finca-info-name">${finca.name}</span>
@@ -321,8 +329,14 @@ function renderFincasSettingsList() {
           <span style="${boundaryStyle}">${boundaryTag}</span> | 
           ${count} incidencias
         </span>
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Carpeta:</span>
+          <select class="form-select" style="font-size: 0.75rem; padding: 4px 20px 4px 8px; height: 28px; width: 140px; border-color: var(--border);" onchange="moveFincaToFolder('${finca.id}', this.value)">
+            ${folderOptions}
+          </select>
+        </div>
       </div>
-      <button class="btn-delete-finca" onclick="deleteFincaAction('${finca.id}')" title="Eliminar finca">
+      <button class="btn-delete-finca" onclick="deleteFincaAction('${finca.id}')" title="Eliminar finca" style="align-self: center;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
       </button>
     `;
@@ -330,6 +344,20 @@ function renderFincasSettingsList() {
     container.appendChild(item);
   });
 }
+
+function moveFincaToFolder(fincaId, folderId) {
+  const finca = appState.fincas.find(f => f.id === fincaId);
+  if (!finca) return;
+  
+  finca.folderId = folderId;
+  saveData();
+  
+  renderFincasSettingsList();
+  renderFoldersSettingsList();
+}
+
+// Exponer globalmente
+window.moveFincaToFolder = moveFincaToFolder;
 
 // --- RENDERIZADO DE CARPETAS ---
 function renderFoldersSettingsList() {
