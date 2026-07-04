@@ -348,13 +348,56 @@
         </div>
 
         <!-- SECCIÓN DE PESTAÑA 1: CONFIGURACIÓN -->
-        <div class="admin-tab-content active" id="tab-config">
+        <div class="admin-tab-content active" id="tab-config" style="display: flex; flex-direction: column; gap: 20px;">
+          
+          <!-- Seleccionar y Crear Cuentas -->
+          <div class="settings-card full-width" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <h3 style="margin-top: 0;">Seleccionar Cuenta de Usuario</h3>
+                <p class="settings-desc">Elige qué cuenta quieres cargar para ver, dibujar o editar sus datos.</p>
+                <div style="display: flex; gap: 8px;">
+                  <select id="admin-account-select" class="form-select" style="flex: 2; padding: 10px; font-size: 0.95rem;">
+                    <option value="">Cargando cuentas...</option>
+                  </select>
+                  <button id="btn-reload-accounts" class="btn btn-secondary" style="flex-shrink: 0; padding: 10px 14px;">Actualizar</button>
+                </div>
+              </div>
+              <div>
+                <h3 style="margin-top: 0;">Crear Nueva Cuenta</h3>
+                <p class="settings-desc">Escribe un nombre/usuario para la nueva cuenta y pulsa Crear.</p>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="input-new-account-code" class="form-input" placeholder="Ej. manolillo, rural2" style="text-transform: lowercase;">
+                  <button id="btn-create-account" class="btn btn-primary">Crear Cuenta</button>
+                </div>
+              </div>
+            </div>
+            <div id="active-account-indicator" style="font-size: 0.9rem; font-weight: 700; color: var(--primary); padding: 8px 12px; background: rgba(78, 110, 87, 0.08); border-radius: var(--radius-sm); border: 1px solid var(--primary-light); text-align: center; display: none;">
+              Editando la cuenta: <span id="text-editing-account" style="color: var(--accent); font-family: monospace; font-size: 1rem;">daedcfc</span>
+            </div>
+          </div>
+
           <div class="admin-grid">
+            
+            <!-- Gestión de Carpetas -->
+            <div class="settings-card full-width">
+              <h3>Gestionar Carpetas</h3>
+              <p class="settings-desc">Organiza las fincas de la cuenta seleccionada agrupándolas en carpetas.</p>
+              
+              <div class="folders-settings-list" id="folders-settings-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                <!-- Renderizado dinámico de carpetas -->
+              </div>
+              
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="input-new-folder" class="form-input" placeholder="Nueva carpeta (ej. Olivar, Almendro)..." style="flex: 2;">
+                <button id="btn-create-folder" class="btn btn-primary" style="flex: 1;">Crear</button>
+              </div>
+            </div>
             
             <!-- Gestión de Fincas -->
             <div class="settings-card full-width">
               <h3>Gestionar Fincas</h3>
-              <p class="settings-desc">Añade o elimina fincas en la base de datos local. Eliminar una finca borrará de forma definitiva todas sus incidencias asociadas.</p>
+              <p class="settings-desc">Añade o elimina fincas en la cuenta seleccionada. Eliminar una finca borrará de forma definitiva todas sus incidencias asociadas.</p>
               
               <div class="fincas-settings-list" id="fincas-settings-list">
                 <!-- Renderizado dinámico de fincas -->

@@ -100,42 +100,202 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuthentication();
 });
 
+// --- AUXILIARES DE SINCRONIZACIÓN EN LA NUBE ---
+function getCloudSyncUrl(code = '', action = '') {
+  return `../.netlify/functions/sync?${action ? 'action=' + action + '&' : ''}${code ? 'code=' + code : ''}`;
+}
+
+let accountsList = [];
+let selectedAccount = '';
+
+function loadAccountsList() {
+  const select = document.getElementById('admin-account-select');
+  select.innerHTML = '<option value="">Cargando cuentas...</option>';
+  
+  fetch(getCloudSyncUrl('', 'list') + '&password=Manuel1214$')
+  .then(res => {
+    if (!res.ok) throw new Error("Error cargando cuentas");
+    return res.json();
+  })
+  .then(data => {
+    accountsList = data;
+    select.innerHTML = '<option value="">-- Selecciona una cuenta --</option>';
+    data.forEach(acc => {
+      const opt = document.createElement('option');
+      opt.value = acc.code;
+      opt.textContent = `${acc.code} (Última mod: ${new Date(Number(acc.last_updated)).toLocaleString()})`;
+      if (acc.code === selectedAccount) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+  })
+  .catch(err => {
+    console.error(err);
+    select.innerHTML = '<option value="">Error al cargar cuentas</option>';
+  });
+}
+
+function selectAccount(code) {
+  if (!code) {
+    selectedAccount = '';
+    sessionStorage.removeItem('fs_selected_account');
+    document.getElementById('active-account-indicator').style.display = 'none';
+    appState = { fincas: [], incidencias: [], folders: [], lastUpdated: 0 };
+    renderFincasSettingsList();
+    renderFoldersSettingsList();
+    disableAdminControls(true);
+    return;
+  }
+  
+  selectedAccount = code;
+  sessionStorage.setItem('fs_selected_account', code);
+  
+  document.getElementById('active-account-indicator').style.display = 'block';
+  document.getElementById('text-editing-account').textContent = code;
+  
+  fetch(getCloudSyncUrl(code))
+  .then(res => {
+    if (!res.ok) throw new Error("No se pudo cargar la cuenta");
+    return res.json();
+  })
+  .then(cloudData => {
+    appState = cloudData;
+    appState.syncCode = code;
+    
+    if (!appState.folders || appState.folders.length === 0) {
+      appState.folders = [
+        { id: 'folder-huescar', name: 'Huéscar' },
+        { id: 'folder-baza', name: 'Baza' }
+      ];
+    }
+    
+    disableAdminControls(false);
+    renderFincasSettingsList();
+    renderFoldersSettingsList();
+    populateFolderSelects();
+    
+    if (appState.fincas && appState.fincas.length > 0 && adminMap) {
+      const first = appState.fincas[0];
+      adminMap.setView([first.lat, first.lng], 15);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error al cargar los datos de la cuenta.");
+  });
+}
+
+function disableAdminControls(disabled) {
+  const btns = [
+    'btn-settings-add-finca',
+    'btn-create-folder',
+    'btn-export-backup',
+    'input-import-backup',
+    'btn-reset-db',
+    'btn-draw-pencil',
+    'btn-draw-clear',
+    'input-new-folder',
+    'input-admin-search',
+    'btn-admin-search-submit'
+  ];
+  
+  btns.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = disabled;
+    }
+  });
+}
+
+function createNewAccount() {
+  const input = document.getElementById('input-new-account-code');
+  const code = input.value.trim().toLowerCase();
+  if (!code) {
+    alert("Introduce un código de cuenta válido.");
+    return;
+  }
+  
+  if (!/^[a-z0-9_-]+$/.test(code)) {
+    alert("El código de la cuenta solo puede contener letras, números, guiones y barras bajas.");
+    return;
+  }
+  
+  fetch(getCloudSyncUrl(code))
+  .then(res => {
+    if (res.status === 200) {
+      alert("Esta cuenta ya existe. Elige otro nombre.");
+      return;
+    }
+    
+    const initialState = {
+      fincas: [],
+      incidencias: [],
+      folders: [
+        { id: 'folder-huescar', name: 'Huéscar' },
+        { id: 'folder-baza', name: 'Baza' }
+      ],
+      shoppingList: [],
+      checkedIncidentSupplies: [],
+      syncCode: code,
+      lastUpdated: Date.now()
+    };
+    
+    return fetch(getCloudSyncUrl(code), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(initialState)
+    })
+    .then(createRes => {
+      if (!createRes.ok) throw new Error("Error al crear cuenta");
+      alert(`¡Cuenta "${code}" creada con éxito!`);
+      input.value = '';
+      loadAccountsList();
+      selectAccount(code);
+    });
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error al conectar con la base de datos.");
+  });
+}
+
 // --- INICIALIZACIÓN DE LA APLICACIÓN DE ADMINISTRACIÓN ---
 function initAdminApp() {
-  initData();
   setupEventListeners();
-  renderFincasSettingsList();
+  loadAccountsList();
   
-  // Inicializar mapa de administración en diferido para evitar problemas de visualización en pestañas ocultas
+  const lastAccount = sessionStorage.getItem('fs_selected_account');
+  if (lastAccount) {
+    selectedAccount = lastAccount;
+    selectAccount(lastAccount);
+  } else {
+    disableAdminControls(true);
+  }
+  
   setTimeout(() => {
     initAdminMap();
   }, 100);
 }
 
-// Cargar datos de localStorage o iniciar con defaults
-function initData() {
-  const savedFincas = localStorage.getItem('fh_fincas');
-  const savedIncidencias = localStorage.getItem('fh_incidencias');
-  
-  if (savedFincas) {
-    appState.fincas = JSON.parse(savedFincas);
-  } else {
-    appState.fincas = [...DEFAULT_FINCAS];
-    localStorage.setItem('fh_fincas', JSON.stringify(appState.fincas));
-  }
-  
-  if (savedIncidencias) {
-    appState.incidencias = JSON.parse(savedIncidencias);
-  } else {
-    appState.incidencias = [...DEFAULT_INCIDENCIAS];
-    localStorage.setItem('fh_incidencias', JSON.stringify(appState.incidencias));
-  }
-}
-
-// Guardar datos en localStorage
+// Guardar datos en la base de datos PostgreSQL de la nube
 function saveData() {
-  localStorage.setItem('fh_fincas', JSON.stringify(appState.fincas));
-  localStorage.setItem('fh_incidencias', JSON.stringify(appState.incidencias));
+  if (!selectedAccount) return;
+  appState.lastUpdated = Date.now();
+  
+  fetch(getCloudSyncUrl(selectedAccount), {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(appState)
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al guardar en la nube");
+    console.log("Cambios guardados en PostgreSQL con éxito.");
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Atención: No se han podido guardar los cambios en la base de datos de la nube. Comprueba tu conexión.");
+  });
 }
 
 // --- RENDERIZADO DEL LISTADO DE CONFIGURACIÓN ---
@@ -171,8 +331,106 @@ function renderFincasSettingsList() {
   });
 }
 
+// --- RENDERIZADO DE CARPETAS ---
+function renderFoldersSettingsList() {
+  const container = document.getElementById('folders-settings-list');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  if (!appState.folders) appState.folders = [];
+  
+  appState.folders.forEach(folder => {
+    const item = document.createElement('div');
+    item.className = 'finca-settings-item';
+    item.style.padding = '8px 12px';
+    
+    const count = (appState.fincas || []).filter(f => f.folderId === folder.id).length;
+    
+    item.innerHTML = `
+      <div class="finca-info-group">
+        <span class="finca-info-name" style="font-weight: 500;">📂 ${folder.name}</span>
+        <span class="finca-info-meta">${count} fincas</span>
+      </div>
+      ${folder.id !== 'general' ? `
+        <button class="btn-delete-finca" onclick="deleteFolderAction('${folder.id}')" title="Eliminar carpeta" style="background: none; border: none; color: var(--danger); cursor: pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-sm" style="width: 16px; height: 16px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      ` : ''}
+    `;
+    container.appendChild(item);
+  });
+}
+
+function createFolderAction() {
+  const input = document.getElementById('input-new-folder');
+  const name = input.value.trim();
+  if (!name) return;
+  
+  if (!appState.folders) appState.folders = [];
+  
+  const newFolder = {
+    id: 'folder-' + Date.now(),
+    name: name
+  };
+  
+  appState.folders.push(newFolder);
+  saveData();
+  input.value = '';
+  renderFoldersSettingsList();
+  populateFolderSelects();
+}
+
+function deleteFolderAction(id) {
+  if (id === 'general') return;
+  if (confirm("¿Estás seguro de que quieres eliminar esta carpeta? Las fincas que estén dentro se moverán a la carpeta General.")) {
+    (appState.fincas || []).forEach(f => {
+      if (f.folderId === id) f.folderId = 'general';
+    });
+    appState.folders = appState.folders.filter(f => f.id !== id);
+    saveData();
+    renderFoldersSettingsList();
+    renderFincasSettingsList();
+    populateFolderSelects();
+  }
+}
+
+function populateFolderSelects() {
+  const select = document.getElementById('drawn-finca-folder-select');
+  if (!select) return;
+  select.innerHTML = '';
+  
+  if (!appState.folders) appState.folders = [];
+  
+  appState.folders.forEach(folder => {
+    const opt = document.createElement('option');
+    opt.value = folder.id;
+    opt.textContent = folder.name;
+    select.appendChild(opt);
+  });
+}
+
+// Exponer funciones globales
+window.deleteFolderAction = deleteFolderAction;
+
 // --- EVENT LISTENERS GENERALES ---
 function setupEventListeners() {
+  // Cambio de cuenta seleccionada
+  document.getElementById('admin-account-select').addEventListener('change', (e) => {
+    selectAccount(e.target.value);
+  });
+
+  // Botón recargar lista de cuentas
+  document.getElementById('btn-reload-accounts').addEventListener('click', loadAccountsList);
+
+  // Botón crear nueva cuenta
+  document.getElementById('btn-create-account').addEventListener('click', createNewAccount);
+
+  // Botón crear carpeta
+  document.getElementById('btn-create-folder').addEventListener('click', createFolderAction);
+  document.getElementById('input-new-folder').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') createFolderAction();
+  });
+
   // Navegación de Pestañas (Tabs)
   const tabButtons = document.querySelectorAll('.admin-tab-btn');
   const tabContents = document.querySelectorAll('.admin-tab-content');
@@ -187,7 +445,6 @@ function setupEventListeners() {
       btn.classList.add('active');
       document.getElementById(targetId).classList.add('active');
       
-      // Invalidate map size para que Leaflet renderice bien las celdas en la pestaña de Selección
       if (targetId === 'tab-seleccion' && adminMap) {
         setTimeout(() => {
           adminMap.invalidateSize();
@@ -530,12 +787,15 @@ function saveDrawnFinca() {
     return;
   }
   
+  const folderId = document.getElementById('drawn-finca-folder-select').value || 'general';
+  
   const newFinca = {
     id: 'finca-' + Date.now(),
     name: name,
     lat: centroid.lat,
     lng: centroid.lng,
-    polygon: [...drawnPoints] // Guardar matriz de coordenadas del polígono
+    polygon: [...drawnPoints],
+    folderId: folderId
   };
   
   appState.fincas.push(newFinca);
@@ -582,10 +842,7 @@ window.deleteFincaAction = function(fincaId) {
   const finca = appState.fincas.find(f => f.id === fincaId);
   if (!finca) return;
   
-  if (appState.fincas.length <= 1) {
-    alert("No puedes eliminar la única finca activa. Debes registrar otra antes.");
-    return;
-  }
+  // Permite eliminar la última finca si es necesario
   
   const asociadas = appState.incidencias.filter(i => i.fincaId === fincaId);
   
@@ -600,8 +857,14 @@ window.deleteFincaAction = function(fincaId) {
     // Borrar finca
     appState.fincas = appState.fincas.filter(f => f.id !== fincaId);
     
+    // Si era la finca seleccionada activa, deseleccionar o reasignar
+    if (appState.selectedFincaId === fincaId) {
+      appState.selectedFincaId = appState.fincas.length > 0 ? appState.fincas[0].id : '';
+    }
+    
     saveData();
     renderFincasSettingsList();
+    renderFoldersSettingsList();
   }
 };
 
@@ -671,7 +934,8 @@ function handleModalFincaSubmit(e) {
     name: name,
     lat: tempImportedFinca.lat,
     lng: tempImportedFinca.lng,
-    polygon: tempImportedFinca.polygon
+    polygon: tempImportedFinca.polygon,
+    folderId: 'general'
   };
   
   appState.fincas.push(newFinca);
@@ -730,11 +994,23 @@ function importBackup(e) {
 
 // Restablecer aplicación completa
 function resetDatabase() {
-  if (confirm("¿Estás seguro de restablecer toda la aplicación? Se eliminarán tus fincas, lindes e incidencias actuales y se restaurarán los valores predeterminados.")) {
-    localStorage.removeItem('fh_fincas');
-    localStorage.removeItem('fh_incidencias');
-    initData();
+  if (confirm("¿Estás seguro de restablecer esta cuenta? Se eliminarán todas las fincas, lindes e incidencias y se restaurarán las carpetas predeterminadas (Huéscar y Baza).")) {
+    appState = {
+      fincas: [],
+      incidencias: [],
+      folders: [
+        { id: 'folder-huescar', name: 'Huéscar' },
+        { id: 'folder-baza', name: 'Baza' }
+      ],
+      shoppingList: [],
+      checkedIncidentSupplies: [],
+      syncCode: selectedAccount,
+      lastUpdated: Date.now()
+    };
+    saveData();
     renderFincasSettingsList();
-    alert("Aplicación restablecida con éxito.");
+    renderFoldersSettingsList();
+    populateFolderSelects();
+    alert("Cuenta restablecida con éxito.");
   }
 }

@@ -79,6 +79,7 @@ let tempImportedFinca = null;
 // --- INICIALIZACIÓN ---
 document.addEventListener('DOMContentLoaded', () => {
   initData();
+  checkUserSession();
   setupNavigation();
   initMap();
   setupEventListeners();
@@ -97,6 +98,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (appState.syncCode) {
     fetch(getCloudSyncUrl(appState.syncCode))
     .then(res => {
+      if (res.status === 404) {
+        appState.syncCode = '';
+        localStorage.removeItem('fh_sync_code');
+        checkUserSession();
+        throw new Error("La cuenta ha sido eliminada por el administrador.");
+      }
       if (!res.ok) throw new Error("Sync load failed");
       return res.json();
     })
@@ -209,11 +216,10 @@ function initData() {
     appState.checkedIncidentSupplies = [];
   }
   
-  if (savedSyncCode && savedSyncCode !== 'eedaecf') {
+  if (savedSyncCode) {
     appState.syncCode = savedSyncCode;
   } else {
-    appState.syncCode = 'daedcfc'; // Grupo de sincronización por defecto para FincasSerrano
-    localStorage.setItem('fh_sync_code', 'daedcfc');
+    appState.syncCode = '';
   }
   
   const savedLastUpdated = localStorage.getItem('fh_last_updated');
@@ -775,8 +781,88 @@ function updateIncidenciasBadge() {
   }
 }
 
+// Validar y controlar la visualización de la sesión de usuario
+function checkUserSession() {
+  const loginPanel = document.getElementById('login-panel');
+  if (!appState.syncCode) {
+    if (loginPanel) loginPanel.style.display = 'flex';
+  } else {
+    if (loginPanel) loginPanel.style.display = 'none';
+  }
+}
+
 // --- CONFIGURACIÓN DE EVENT LISTENERS ---
 function setupEventListeners() {
+  // Escuchador para el formulario de login de usuario normal
+  const loginForm = document.getElementById('form-user-login');
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const codeInput = document.getElementById('user-login-code');
+      const errorDiv = document.getElementById('user-login-error');
+      const submitBtn = document.getElementById('btn-user-login-submit');
+      
+      const code = codeInput.value.trim().toLowerCase();
+      if (!code) return;
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Verificando...";
+      errorDiv.style.display = 'none';
+      
+      fetch(getCloudSyncUrl(code))
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("No existe esta cuenta");
+        }
+        return res.json();
+      })
+      .then(cloudData => {
+        if (cloudData && cloudData.fincas) {
+          appState = cloudData;
+          appState.syncCode = code;
+          sanitizeData();
+          saveData();
+          
+          renderApp();
+          renderFincasSettingsList();
+          renderFoldersSettingsList();
+          
+          const initialFinca = getFincaById(appState.selectedFincaId);
+          if (initialFinca && map) {
+            map.setView([initialFinca.lat, initialFinca.lng], 16);
+            restrictMapBounds(initialFinca);
+          }
+          
+          checkUserSession();
+        } else {
+          throw new Error("Datos incompatibles");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        errorDiv.style.display = 'block';
+        codeInput.value = '';
+        codeInput.focus();
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Entrar a la Aplicación";
+      });
+    });
+  }
+
+  // Escuchador para el botón de cerrar sesión
+  const logoutBtn = document.getElementById('btn-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      if (confirm("¿Estás seguro de que quieres cerrar sesión?")) {
+        appState.syncCode = '';
+        localStorage.removeItem('fh_sync_code');
+        checkUserSession();
+      }
+    });
+  }
+
   // Cambio de Finca en el selector principal
   document.getElementById('finca-select').addEventListener('change', (e) => {
     appState.selectedFincaId = e.target.value;

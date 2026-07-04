@@ -6,6 +6,7 @@ const connectionString = 'postgresql://postgres:vd1tmp242irvcww1@187.127.233.89:
 
 exports.handler = async function(event, context) {
   const code = event.queryStringParameters && event.queryStringParameters.code;
+  const action = event.queryStringParameters && event.queryStringParameters.action;
   
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,25 @@ exports.handler = async function(event, context) {
       );
     `);
 
-    // 1. CREACIÓN DE GRUPO NUEVO (POST sin código)
+    // 1. LISTAR CUENTAS (Solo para el administrador con contraseña)
+    if (action === 'list') {
+      const password = event.queryStringParameters.password;
+      if (password !== 'Manuel1214$') {
+        return {
+          statusCode: 403,
+          headers,
+          body: JSON.stringify({ error: "Unauthorized" })
+        };
+      }
+      const res = await client.query('SELECT code, last_updated FROM sync_groups ORDER BY code ASC');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(res.rows)
+      };
+    }
+
+    // 2. CREACIÓN DE GRUPO NUEVO DESDE EL CLIENTE (POST sin código)
     if (!code && event.httpMethod === "POST") {
       const payload = JSON.parse(event.body);
       
@@ -75,7 +94,7 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // 2. OBTENER DATOS (GET con código)
+    // 3. OBTENER DATOS (GET con código)
     if (event.httpMethod === "GET") {
       const res = await client.query('SELECT data FROM sync_groups WHERE code = $1', [code]);
       if (res.rows.length > 0) {
@@ -93,7 +112,7 @@ exports.handler = async function(event, context) {
       }
     }
 
-    // 3. ACTUALIZAR DATOS (POST con código)
+    // 4. ACTUALIZAR DATOS (POST con código)
     if (event.httpMethod === "POST") {
       const payload = JSON.parse(event.body);
       const lastUpdated = payload.lastUpdated || Date.now();
