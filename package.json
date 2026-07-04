@@ -13,5 +13,8 @@
     "netlify"
   ],
   "author": "FincasSerrano",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "pg": "^8.11.0"
+  }
 }
