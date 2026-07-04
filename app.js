@@ -2644,314 +2644,159 @@ function runVoiceAssistantStep() {
   const stepIndicator = document.getElementById('voice-step-indicator');
   const promptText = document.getElementById('voice-prompt-text');
   
-  // MENU PRINCIPAL DE ELECCIÓN
-  if (voiceFlowMode === 'choice') {
-    stepIndicator.textContent = "Menú Principal";
-    promptText.textContent = "¿Qué deseas hacer? ¿Reportar una incidencia o añadir algo a la lista de la compra?";
-    
-    speak("¿Qué deseas hacer? ¿Reportar una incidencia o añadir algo a la lista de la compra?", () => {
-      listen((result) => {
-        const text = result.toLowerCase();
-        if (text.includes("incidencia") || text.includes("incidente") || text.includes("reportar") || text.includes("averia") || text.includes("avería") || text.includes("problema")) {
-          voiceFlowMode = 'incidencia';
-          currentVoiceState = 0;
-          speak("Entendido. Vamos a registrar la incidencia.", () => {
-            runVoiceAssistantStep();
-          });
-        } else if (text.includes("compra") || text.includes("lista") || text.includes("añadir") || text.includes("articulo") || text.includes("artículo") || text.includes("producto")) {
-          voiceFlowMode = 'compra';
-          currentVoiceState = 0;
-          speak("Entendido. Vamos a añadir a la lista de la compra.", () => {
-            runVoiceAssistantStep();
-          });
-        } else {
-          speak("Por favor, di reportar incidencia o lista de la compra.", () => {
-            listen((retryResult) => {
-              const retryText = retryResult.toLowerCase();
-              if (retryText.includes("incidencia") || retryText.includes("reportar") || retryText.includes("averia")) {
-                voiceFlowMode = 'incidencia';
-                currentVoiceState = 0;
-                runVoiceAssistantStep();
-              } else if (retryText.includes("compra") || retryText.includes("lista") || retryText.includes("añadir")) {
-                voiceFlowMode = 'compra';
-                currentVoiceState = 0;
-                runVoiceAssistantStep();
-              } else {
-                speak("No te he entendido. Cerrando el asistente.", () => {
-                  stopVoiceAssistant();
-                });
-              }
-            }, () => {
-              stopVoiceAssistant();
-            });
-          });
-        }
-      }, () => {
-        speak("No te he escuchado. ¿Quieres registrar una incidencia o añadir a la lista de la compra?", () => {
-          listen((retryResult) => {
-            const retryText = retryResult.toLowerCase();
-            if (retryText.includes("incidencia") || retryText.includes("reportar")) {
-              voiceFlowMode = 'incidencia';
-              currentVoiceState = 0;
-              runVoiceAssistantStep();
-            } else if (retryText.includes("compra") || retryText.includes("lista")) {
-              voiceFlowMode = 'compra';
-              currentVoiceState = 0;
-              runVoiceAssistantStep();
-            } else {
-              stopVoiceAssistant();
-            }
-          }, () => {
-            stopVoiceAssistant();
-          });
-        });
-      });
-    });
-    return;
-  }
+  stepIndicator.textContent = "Asistente Inteligente";
+  promptText.textContent = "¿Qué deseas?";
   
-  // SUBFLUJO 1: AÑADIR A LA LISTA DE LA COMPRA
-  if (voiceFlowMode === 'compra') {
-    stepIndicator.textContent = "Compra: Paso 1 de 1";
-    promptText.textContent = "¿Qué artículos quieres añadir a la lista de la compra?";
-    
-    speak("¿Qué artículos quieres añadir a la lista de la compra?", () => {
-      listen((result) => {
-        const cleanResult = result.trim();
-        const lowerResult = cleanResult.toLowerCase();
-        if (lowerResult === "ninguno" || lowerResult === "nada" || lowerResult === "no") {
-          speak("Entendido. Proceso finalizado sin añadir artículos.", () => {
-            stopVoiceAssistant();
-          });
-          return;
-        }
-        
-        const items = cleanResult.split(/ y |,/i);
-        if (!appState.shoppingList) appState.shoppingList = [];
-        
-        items.forEach((it, idx) => {
-          const text = it.trim();
-          if (text) {
-            const formatted = text.charAt(0).toUpperCase() + text.slice(1);
-            appState.shoppingList.push({
-              id: 'compra-' + Date.now() + '-' + idx,
-              text: formatted,
-              checked: false
-            });
-          }
-        });
-        
-        saveData();
-        
-        speak("Artículos añadidos a la lista de la compra. Proceso finalizado.", () => {
-          stopVoiceAssistant();
-          // Navegar a la sección de compras
-          document.getElementById('nav-btn-compra').click();
-          document.getElementById('tab-compra-manual').click();
-          renderShoppingList();
-        });
-      }, () => {
+  speak("¿Qué deseas?", () => {
+    listen((result) => {
+      if (result) {
+        parseOneShotVoiceCommand(result);
+      } else {
         speak("No te he escuchado bien. Cerrando el asistente.", () => {
           stopVoiceAssistant();
         });
+      }
+    }, () => {
+      speak("No te he escuchado. Cerrando el asistente.", () => {
+        stopVoiceAssistant();
       });
     });
-    return;
+  });
+}
+
+// Procesar el comando de voz en una sola frase (NLP básico)
+function parseOneShotVoiceCommand(text) {
+  const cleanText = text.trim();
+  const lowerText = cleanText.toLowerCase();
+  
+  // 1. DETERMINAR ACCIÓN (Incidencia o Compra)
+  let isIncidencia = true;
+  if (lowerText.includes("compra") || lowerText.includes("comprar") || lowerText.includes("lista")) {
+    const hasIncidenciaKeywords = lowerText.includes("incidencia") || lowerText.includes("averia") || 
+                                  lowerText.includes("avería") || lowerText.includes("roto") || 
+                                  lowerText.includes("rota") || lowerText.includes("fuga") || 
+                                  lowerText.includes("olivo") || lowerText.includes("almendro");
+    if (!hasIncidenciaKeywords) {
+      isIncidencia = false;
+    }
   }
   
-  // SUBFLUJO 2: REGISTRAR INCIDENCIA
-  switch(currentVoiceState) {
-    case 0:
-      stepIndicator.textContent = "Incidencia: Paso 1 de 5: Finca";
-      promptText.textContent = "¿En qué finca quieres registrar la incidencia?";
-      speak("¿En qué finca quieres registrar la incidencia?", () => {
-        listen((result) => {
-          const matchedId = findFincaIdByName(result);
-          if (matchedId) {
-            voiceData.fincaId = matchedId;
-            const finca = getFincaById(matchedId);
-            speak(`Finca ${finca.name} seleccionada.`, () => {
-              currentVoiceState = 1;
-              runVoiceAssistantStep();
-            });
-          } else {
-            speak("No he encontrado esa finca. Di de nuevo el nombre.", () => {
-              listen((retryResult) => {
-                const matchedIdRetry = findFincaIdByName(retryResult);
-                if (matchedIdRetry) {
-                  voiceData.fincaId = matchedIdRetry;
-                  const finca = getFincaById(matchedIdRetry);
-                  speak(`Finca ${finca.name} seleccionada.`, () => {
-                    currentVoiceState = 1;
-                    runVoiceAssistantStep();
-                  });
-                } else {
-                  voiceData.fincaId = appState.selectedFincaId || (appState.fincas[0] ? appState.fincas[0].id : 'general');
-                  const finca = getFincaById(voiceData.fincaId);
-                  speak(`Asociando a la finca activa, ${finca ? finca.name : 'General'}.`, () => {
-                    currentVoiceState = 1;
-                    runVoiceAssistantStep();
-                  });
-                }
-              }, () => {
-                voiceData.fincaId = appState.selectedFincaId || (appState.fincas[0] ? appState.fincas[0].id : 'general');
-                currentVoiceState = 1;
-                runVoiceAssistantStep();
-              });
-            });
-          }
-        }, () => {
-          speak("No te he oído. ¿Cuál es el nombre de la finca?", () => {
-            listen((retryResult) => {
-              const matchedIdRetry = findFincaIdByName(retryResult);
-              if (matchedIdRetry) {
-                voiceData.fincaId = matchedIdRetry;
-                currentVoiceState = 1;
-                runVoiceAssistantStep();
-              } else {
-                voiceData.fincaId = appState.selectedFincaId || (appState.fincas[0] ? appState.fincas[0].id : 'general');
-                currentVoiceState = 1;
-                runVoiceAssistantStep();
-              }
-            }, () => {
-              voiceData.fincaId = appState.selectedFincaId || (appState.fincas[0] ? appState.fincas[0].id : 'general');
-              currentVoiceState = 1;
-              runVoiceAssistantStep();
-            });
-          });
+  if (isIncidencia) {
+    // A. DETECTAR FINCA
+    let fincaId = appState.selectedFincaId || (appState.fincas[0] ? appState.fincas[0].id : 'general');
+    if (appState.fincas && appState.fincas.length > 0) {
+      for (const finca of appState.fincas) {
+        if (finca.name && lowerText.includes(finca.name.toLowerCase())) {
+          fincaId = finca.id;
+          break;
+        }
+      }
+    }
+    
+    // B. DETECTAR SI ES LOCALIZADA (GPS) O GENERAL
+    let isGeneral = true;
+    const gpsKeywords = ["donde estoy", "dónde estoy", "aqui", "aquí", "ubicacion actual", "ubicación actual", "mi posicion", "mi posición", "gps"];
+    if (gpsKeywords.some(keyword => lowerText.includes(keyword))) {
+      isGeneral = false;
+    }
+    
+    // C. EXTRACT MATERIALES (necesito X)
+    let materiales = '';
+    const necesitoRegex = /(?:necesito|necesitamos|hace falta|hacen falta|hace falta comprar|comprar)\s+([^,.]+)/i;
+    const necesitoMatch = cleanText.match(necesitoRegex);
+    if (necesitoMatch && necesitoMatch[1]) {
+      materiales = necesitoMatch[1].trim();
+      // Limpiar artículos iniciales
+      materiales = materiales.replace(/^(un|una|unos|unas|el|la|los|las|algun|algunos|algunas)\s+/i, '');
+      materiales = materiales.charAt(0).toUpperCase() + materiales.slice(1);
+    }
+    
+    // D. EXTRACT TIPO DE INCIDENCIA
+    let tipo = '';
+    const hayRegex = /(?:hay|tengo|se ha detectado|detectado|veo)\s+(?:un\s+|una\s+)?([^,.]+?(?:roto|rota|enfermo|enferma|dañado|dañada|fuga|perdida|perdiendo|roto|rota))/i;
+    const hayMatch = cleanText.match(hayRegex);
+    if (hayMatch && hayMatch[1]) {
+      tipo = hayMatch[1].trim();
+    } else {
+      const startMatch = cleanText.match(/(?:incidencia|averia|avería|reportar)\s+(?:donde estoy\s+)?(?:hay\s+)?([^,.]+?)(?:\s+(?:necesito|para|donde|en|de)\b|$)/i);
+      if (startMatch && startMatch[1]) {
+        tipo = startMatch[1].trim();
+      }
+    }
+    
+    if (tipo) {
+      tipo = tipo.replace(/^(un|una|unos|unas|el|la|los|las)\s+/i, '');
+      tipo = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    } else {
+      tipo = "Incidencia de Voz";
+    }
+    
+    // E. CREAR LA INCIDENCIA
+    let lat = null;
+    let lng = null;
+    if (!isGeneral) {
+      if (lastGpsPosition) {
+        lat = lastGpsPosition.lat;
+        lng = lastGpsPosition.lng;
+      } else {
+        const finca = getFincaById(fincaId);
+        if (finca) {
+          lat = finca.lat;
+          lng = finca.lng;
+        }
+      }
+    }
+    
+    const newInc = {
+      id: 'inc-' + Date.now(),
+      fincaId: fincaId,
+      tipo: tipo,
+      descripcion: cleanText,
+      materiales: materiales,
+      herramientas: '',
+      lat: lat,
+      lng: lng,
+      estado: 'Pendiente',
+      fecha: new Date().toISOString()
+    };
+    
+    appState.incidencias.push(newInc);
+    saveData();
+    
+    const locationMsg = isGeneral ? "general " : "en tu ubicación actual ";
+    const fincaObj = getFincaById(fincaId);
+    speak(`Incidencia registrada: ${tipo} ${locationMsg}para la finca ${fincaObj ? fincaObj.name : 'General'}. Proceso finalizado.`, () => {
+      stopVoiceAssistant();
+      renderApp();
+      renderIncidenciasList();
+    });
+    
+  } else {
+    // A. PROCESAR COMO COMPRA
+    let cleanPhrase = cleanText.replace(/^(comprar|añadir a la lista|lista de la compra|añadir|necesito comprar)\s+/i, '');
+    const items = cleanPhrase.split(/\s+y\s+|,/i);
+    if (!appState.shoppingList) appState.shoppingList = [];
+    
+    items.forEach((it, idx) => {
+      const text = it.trim();
+      if (text) {
+        const formatted = text.charAt(0).toUpperCase() + text.slice(1);
+        appState.shoppingList.push({
+          id: 'compra-' + Date.now() + '-' + idx,
+          text: formatted,
+          checked: false
         });
-      });
-      break;
-      
-    case 1:
-      stepIndicator.textContent = "Incidencia: Paso 2 de 5: Ubicación";
-      promptText.textContent = "¿Quieres registrar una incidencia general o en tu ubicación actual?";
-      speak("¿Quieres registrar una incidencia general o en tu ubicación actual?", () => {
-        listen((result) => {
-          const text = result.toLowerCase();
-          if (text.includes("general") || text.includes("primera") || text.includes("finca")) {
-            voiceData.isGeneral = true;
-            speak("Ubicación general seleccionada.", () => {
-              currentVoiceState = 2;
-              runVoiceAssistantStep();
-            });
-          } else if (text.includes("actual") || text.includes("ubicacion") || text.includes("segunda") || text.includes("gps")) {
-            voiceData.isGeneral = false;
-            speak("Ubicación actual seleccionada.", () => {
-              currentVoiceState = 2;
-              runVoiceAssistantStep();
-            });
-          } else {
-            speak("Di general o ubicación actual.", () => {
-              listen((retryResult) => {
-                const textRetry = retryResult.toLowerCase();
-                if (textRetry.includes("actual") || textRetry.includes("ubicacion")) {
-                  voiceData.isGeneral = false;
-                } else {
-                  voiceData.isGeneral = true;
-                }
-                speak(voiceData.isGeneral ? "Establecido como general." : "Establecido en ubicación actual.", () => {
-                  currentVoiceState = 2;
-                  runVoiceAssistantStep();
-                });
-              }, () => {
-                voiceData.isGeneral = true;
-                currentVoiceState = 2;
-                runVoiceAssistantStep();
-              });
-            });
-          }
-        }, () => {
-          voiceData.isGeneral = true;
-          currentVoiceState = 2;
-          runVoiceAssistantStep();
-        });
-      });
-      break;
-      
-    case 2:
-      stepIndicator.textContent = "Incidencia: Paso 3 de 5: Incidencia";
-      promptText.textContent = "¿Cuál es el tipo de incidencia?";
-      speak("¿Cuál es el tipo de incidencia?", () => {
-        listen((result) => {
-          if (result) {
-            voiceData.tipo = result;
-            speak(`Entendido: ${result}.`, () => {
-              currentVoiceState = 3;
-              runVoiceAssistantStep();
-            });
-          } else {
-            speak("Di qué incidencia es.", () => {
-              listen((retryResult) => {
-                voiceData.tipo = retryResult || "Incidencia sin tipo";
-                currentVoiceState = 3;
-                runVoiceAssistantStep();
-              });
-            });
-          }
-        }, () => {
-          speak("No te he escuchado. ¿De qué es la incidencia?", () => {
-            listen((retryResult) => {
-              voiceData.tipo = retryResult || "Incidencia sin tipo";
-              currentVoiceState = 3;
-              runVoiceAssistantStep();
-            }, () => {
-              voiceData.tipo = "Incidencia sin tipo";
-              currentVoiceState = 3;
-              runVoiceAssistantStep();
-            });
-          });
-        });
-      });
-      break;
-      
-    case 3:
-      stepIndicator.textContent = "Incidencia: Paso 4 de 5: Materiales y Herramientas";
-      promptText.textContent = "¿Qué materiales y herramientas necesitas? Di ninguno si no necesitas nada.";
-      speak("¿Qué materiales y herramientas necesitas? Di ninguno si no necesitas nada.", () => {
-        listen((result) => {
-          const clean = result.toLowerCase().trim();
-          if (clean === "ninguno" || clean === "ninguna" || clean === "no" || clean === "nada") {
-            voiceData.materiales = "";
-            speak("Sin materiales ni herramientas.", () => {
-              currentVoiceState = 4;
-              runVoiceAssistantStep();
-            });
-          } else {
-            voiceData.materiales = result;
-            speak(`Añadido: ${result}.`, () => {
-              currentVoiceState = 4;
-              runVoiceAssistantStep();
-            });
-          }
-        }, () => {
-          voiceData.materiales = "";
-          currentVoiceState = 4;
-          runVoiceAssistantStep();
-        });
-      });
-      break;
-      
-    case 4:
-      stepIndicator.textContent = "Incidencia: Paso 5 de 5: Notas Adicionales";
-      promptText.textContent = "¿Quieres añadir alguna nota o descripción? Di no para terminar.";
-      speak("¿Quieres añadir alguna nota o descripción? Di no para terminar.", () => {
-        listen((result) => {
-          const clean = result.toLowerCase().trim();
-          if (clean === "no" || clean === "ninguna" || clean === "ninguno" || clean === "terminar") {
-            voiceData.descripcion = "";
-          } else {
-            voiceData.descripcion = result;
-          }
-          speak("Guardando incidencia.", () => {
-            saveVoiceIncident();
-          });
-        }, () => {
-          voiceData.descripcion = "";
-          saveVoiceIncident();
-        });
-      });
-      break;
+      }
+    });
+    
+    saveData();
+    
+    speak(`Añadidos ${items.length} artículos a la lista de la compra. Proceso finalizado.`, () => {
+      stopVoiceAssistant();
+      document.getElementById('nav-btn-compra').click();
+      document.getElementById('tab-compra-manual').click();
+      renderShoppingList();
+    });
   }
 }
 
