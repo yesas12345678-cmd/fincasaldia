@@ -2736,6 +2736,34 @@ function extractDescription(fullText, tipo, materiales) {
   return cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
 }
 
+// Limpiar descripciones compuestas únicamente de palabras de relleno
+function cleanDescriptionOfFillerWords(desc) {
+  if (!desc) return "";
+  
+  const stopWords = new Set([
+    "quiero", "registrar", "reportar", "incidencia", "incidente", "averia", "avería", 
+    "finca", "del", "de", "la", "el", "los", "las", "un", "una", "unos", "unas", 
+    "y", "que", "en", "por", "con", "donde", "esta", "este", "estos", "estas", 
+    "cual", "la cual", "lo", "los", "las", "para", "aqui", "aquí", "estoy", 
+    "dónde", "donde", "tengo", "hay", "se", "ha", "veo", "detectado", "detectada", 
+    "necesito", "necesitamos", "hace", "falta", "hacen", "traer", "traiga", 
+    "tráeme", "traeme", "añadir", "añadas", "añade", "lista", "compra", "comprar",
+    "nuevo", "nuevos", "nueva", "nuevas", "mi", "mis", "tu", "tus", "su", "sus",
+    "como", "este", "esta", "esto", "a", "al", "o"
+  ]);
+  
+  const words = desc.toLowerCase().match(/[a-zñáéíóúü]+/gi) || [];
+  if (words.length === 0) return "";
+  
+  const nonStopWords = words.filter(word => !stopWords.has(word));
+  
+  if (nonStopWords.length === 0 || (nonStopWords.length / words.length) < 0.3) {
+    return "";
+  }
+  
+  return desc;
+}
+
 // Extraer artículos de la lista de la compra descartando frases introductorias o finales
 function extractShoppingItems(fullText) {
   let temp = fullText.trim();
@@ -2942,6 +2970,8 @@ function parseOneShotVoiceCommand(text) {
     let cleanDesc = tempDesc.trim();
     cleanDesc = cleanDesc.replace(/^(?:de|en|y|con|donde|para|que|esta|este|la|el|los|las|un|una|por una|por un)\s+/gi, "");
     cleanDesc = cleanDesc.trim();
+    
+    cleanDesc = cleanDescriptionOfFillerWords(cleanDesc);
     
     if (cleanDesc.length <= 2) {
       cleanDesc = "";
