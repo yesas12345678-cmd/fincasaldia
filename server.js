@@ -149,6 +149,78 @@ app.use('/api/sync', async (req, res) => {
   }
 });
 
+// Extraer notas o descripción adicional descartando lo que ya se mapeó a Tipo y Materiales
+function extractDescription(fullText, tipo, materiales) {
+  let temp = fullText.toLowerCase();
+  
+  // 1. Quitar frases introductorias y de acción
+  const triggersToRemove = [
+    "quiero reportar una incidencia",
+    "quiero reportar un incidente",
+    "reportar una incidencia",
+    "reportar un incidente",
+    "quiero reportar una averia",
+    "quiero reportar una avería",
+    "reportar una averia",
+    "reportar una avería",
+    "incidencia de",
+    "incidencia",
+    "averia de",
+    "avería de",
+    "averia",
+    "avería"
+  ];
+  
+  for (const trigger of triggersToRemove) {
+    temp = temp.replace(trigger, "");
+  }
+  
+  // 2. Quitar ubicación
+  const gpsKeywords = [
+    "donde estoy",
+    "dónde estoy",
+    "en esta posición",
+    "en esta posicion",
+    "mi posicion",
+    "mi posición",
+    "ubicación actual",
+    "ubicacion actual",
+    "aquí",
+    "aqui"
+  ];
+  
+  for (const keyword of gpsKeywords) {
+    temp = temp.replace(keyword, "");
+  }
+  
+  // 3. Quitar frase de "hay un / tengo un"
+  temp = temp.replace(/\b(?:hay un|hay una|tengo un|tengo una|se ha detectado un|se ha detectado una|detectado un|detectada una|veo un|veo una)\b/gi, "");
+  
+  // 4. Quitar los materiales y la frase "necesito X"
+  if (materiales) {
+    const regexMateriales = new RegExp(`(?:necesito|necesitamos|hace falta|hacen falta|hace falta comprar|comprar)?\\s*(?:un\\s+|una\\s+|unos\\s+|unas\\s+|el\\s+|la\\s+|los\\s+|las\\s+)?${materiales.toLowerCase()}`, "gi");
+    temp = temp.replace(regexMateriales, "");
+  }
+  
+  // 5. Quitar el tipo de incidencia
+  if (tipo) {
+    const regexTipo = new RegExp(`(?:un\\s+|una\\s+|unos\\s+|unas\\s+|el\\s+|la\\s+|los\\s+|las\\s+)?${tipo.toLowerCase()}`, "gi");
+    temp = temp.replace(regexTipo, "");
+  }
+  
+  // 6. Limpieza final de espacios y palabras conectoras al inicio/final
+  let cleanDesc = temp.trim();
+  
+  cleanDesc = cleanDesc.replace(/^(?:de|en|y|con|donde|para|que|esta|este|la|el|los|las|un|una)\s+/gi, "");
+  cleanDesc = cleanDesc.trim();
+  
+  if (cleanDesc.length <= 2) {
+    return "";
+  }
+  
+  return cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
+}
+
 // Endpoint para procesar comandos de voz desde Atajos de iOS (iPhone / Apple Watch)
 app.post('/api/voice-command', async (req, res) => {
   const code = req.query.code;
@@ -283,7 +355,7 @@ app.post('/api/voice-command', async (req, res) => {
         id: 'inc-' + Date.now(),
         fincaId: fincaId,
         tipo: tipo,
-        descripcion: cleanText,
+        descripcion: extractDescription(cleanText, tipo, materiales),
         materiales: materiales,
         herramientas: '',
         lat: finalLat,
