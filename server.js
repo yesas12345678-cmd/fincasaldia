@@ -221,6 +221,61 @@ function extractDescription(fullText, tipo, materiales) {
   return cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
 }
 
+// Extraer artículos de la lista de la compra descartando frases introductorias o finales
+function extractShoppingItems(fullText) {
+  let temp = fullText.trim();
+  
+  // 1. Quitar frases explicativas del inicio
+  const leadingPhrases = [
+    /^(?:quiero\s+)?comprar\s+/gi,
+    /^(?:quiero\s+)?añadir\s+a\s+la\s+lista\s+de\s+la\s+compra\s+/gi,
+    /^(?:quiero\s+)?añadir\s+a\s+la\s+lista\s+de\s+compra\s+/gi,
+    /^(?:quiero\s+)?añadir\s+a\s+la\s+lista\s+/gi,
+    /^(?:tengo\s+que|hay\s+que|necesito|necesitamos)\s+comprar\s+/gi,
+    /^(?:tengo\s+que|hay\s+que|necesito|necesitamos)\s+añadir\s+/gi,
+    /^añade\s+/gi,
+    /^añadir\s+/gi,
+    /^pon\s+/gi,
+    /^poner\s+/gi
+  ];
+  
+  for (const regex of leadingPhrases) {
+    temp = temp.replace(regex, "");
+  }
+  
+  // 2. Quitar frases explicativas del final
+  const trailingPhrases = [
+    /\s+a\s+la\s+lista\s+de\s+la\s+compra$/gi,
+    /\s+a\s+la\s+lista\s+de\s+compra$/gi,
+    /\s+en\s+la\s+lista\s+de\s+la\s+compra$/gi,
+    /\s+en\s+la\s+lista\s+de\s+compra$/gi,
+    /\s+a\s+la\s+lista$/gi,
+    /\s+en\s+la\s+lista$/gi,
+    /\s+para\s+comprar$/gi,
+    /\s+para\s+la\s+compra$/gi
+  ];
+  
+  for (const regex of trailingPhrases) {
+    temp = temp.replace(regex, "");
+  }
+  
+  // 3. Separar por " y " o por comas
+  const rawItems = temp.split(/\s+y\s+|,/i);
+  const items = [];
+  
+  rawItems.forEach(it => {
+    let cleaned = it.trim();
+    cleaned = cleaned.replace(/^(?:un|una|unos|unas|el|la|los|las|de)\s+/gi, "");
+    cleaned = cleaned.trim();
+    if (cleaned.length > 1) {
+      cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+      items.push(cleaned);
+    }
+  });
+  
+  return items;
+}
+
 // Endpoint para procesar comandos de voz desde Atajos de iOS (iPhone / Apple Watch)
 app.post('/api/voice-command', async (req, res) => {
   const code = req.query.code;
@@ -379,20 +434,15 @@ app.post('/api/voice-command', async (req, res) => {
       
     } else {
       // PROCESAR COMPRA
-      let cleanPhrase = cleanText.replace(/^(comprar|añadir a la lista|lista de la compra|añadir|necesito comprar)\s+/i, '');
-      const items = cleanPhrase.split(/\s+y\s+|,/i);
+      const items = extractShoppingItems(cleanText);
       if (!groupData.shoppingList) groupData.shoppingList = [];
       
-      items.forEach((it, idx) => {
-        const text = it.trim();
-        if (text) {
-          const formatted = text.charAt(0).toUpperCase() + text.slice(1);
-          groupData.shoppingList.push({
-            id: 'compra-' + Date.now() + '-' + idx,
-            text: formatted,
-            checked: false
-          });
-        }
+      items.forEach((itemText, idx) => {
+        groupData.shoppingList.push({
+          id: 'compra-' + Date.now() + '-' + idx,
+          text: itemText,
+          checked: false
+        });
       });
       
       groupData.lastUpdated = Date.now();
