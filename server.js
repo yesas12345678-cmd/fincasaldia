@@ -323,10 +323,30 @@ app.post('/api/voice-command', async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
     
-    const cleanText = text.trim();
-    const lowerText = cleanText.toLowerCase();
+    let cleanText = text.trim();
+    let lowerText = cleanText.toLowerCase();
     
-    // 1. DETERMINAR ACCIÓN (Incidencia o Compra)
+    // A. EXTRAER COMPRA ANIDADA (si la hay)
+    const nestedShoppingRegex = /(?:\by\s+)?(?:añade|añadir|pon|poner|comprar)\s+(?:a\s+la\s+lista\s+de\s+(?:la\s+)?compra|en\s+la\s+lista|a\s+la\s+lista)\s+([^,.]+)/i;
+    const nestedShoppingMatch = cleanText.match(nestedShoppingRegex);
+    let nestedShoppingItem = "";
+    if (nestedShoppingMatch) {
+      nestedShoppingItem = nestedShoppingMatch[1].trim();
+      if (!groupData.shoppingList) groupData.shoppingList = [];
+      const parsedItems = extractShoppingItems(nestedShoppingItem);
+      parsedItems.forEach((itemText, idx) => {
+        groupData.shoppingList.push({
+          id: 'compra-' + Date.now() + '-' + idx,
+          text: itemText,
+          checked: false
+        });
+      });
+      // Quitar la sección de compra de la frase original
+      cleanText = cleanText.replace(nestedShoppingMatch[0], "").trim();
+      lowerText = cleanText.toLowerCase();
+    }
+    
+    // B. DETERMINAR ACCIÓN PRINCIPAL (Incidencia o Compra)
     let isIncidencia = true;
     if (lowerText.includes("compra") || lowerText.includes("comprar") || lowerText.includes("lista")) {
       const hasIncidenciaKeywords = lowerText.includes("incidencia") || lowerText.includes("averia") || 
@@ -341,52 +361,122 @@ app.post('/api/voice-command', async (req, res) => {
     let resultMessage = '';
     
     if (isIncidencia) {
-      // A. DETECTAR FINCA
+      // 1. DETECTAR FINCA
       let fincaId = groupData.selectedFincaId || (groupData.fincas[0] ? groupData.fincas[0].id : 'general');
+      let matchedFincaName = "";
       if (groupData.fincas && groupData.fincas.length > 0) {
         for (const finca of groupData.fincas) {
           if (finca.name && lowerText.includes(finca.name.toLowerCase())) {
             fincaId = finca.id;
+            matchedFincaName = finca.name;
             break;
           }
         }
       }
       
-      // B. DETECTAR SI ES LOCALIZADA (GPS) O GENERAL
+      // 2. DETECTAR SI ES LOCALIZADA (GPS) O GENERAL
       let isGeneral = true;
       const gpsKeywords = ["donde estoy", "dónde estoy", "aqui", "aquí", "ubicacion actual", "ubicación actual", "mi posicion", "mi posición", "gps"];
       if (gpsKeywords.some(keyword => lowerText.includes(keyword)) || lat) {
         isGeneral = false;
       }
       
-      // C. EXTRACT MATERIALES (necesito X)
+      // 3. EXTRACT MATERIALES (necesito X, tráeme X, añadas X)
       let materiales = '';
-      const necesitoRegex = /(?:necesito|necesitamos|hace falta|hacen falta|hace falta comprar|comprar)\s+([^,.]+)/i;
+      const necesitoRegex = /(?:necesito|necesitamos|hace falta|hacen falta|hace falta comprar|comprar|traer|traiga|tráeme|traeme|añadas|añadir)\s+(?:que\s+)?(?:me\s+)?(?:des\s+)?(?:traiga\s+|traigas\s+|traer\s+|tráeme\s+|traeme\s+)?(?:un\s+|una\s+|unos\s+|unas\s+|el\s+|la\s+|los\s+|las\s+)?([^,.]+)/i;
       const necesitoMatch = cleanText.match(necesitoRegex);
+      let matchedMaterialString = "";
       if (necesitoMatch && necesitoMatch[1]) {
         materiales = necesitoMatch[1].trim();
-        materiales = materiales.replace(/^(un|una|unos|unas|el|la|los|las|algun|algunos|algunas)\s+/i, '');
+        matchedMaterialString = necesitoMatch[0];
+        materiales = materiales.replace(/^(un|una|unos|unas|el|la|los|las|algun|algunos|algunas|de)\s+/i, '');
         materiales = materiales.charAt(0).toUpperCase() + materiales.slice(1);
       }
       
-      // D. EXTRACT TIPO DE INCIDENCIA
+      // 4. EXTRACT TIPO DE INCIDENCIA
       let tipo = '';
-      const hayRegex = /(?:hay|tengo|se ha detectado|detectado|veo)\s+(?:un\s+|una\s+)?([^,.]+?(?:roto|rota|enfermo|enferma|dañado|dañada|fuga|perdida|perdiendo|roto|rota))/i;
-      const hayMatch = cleanText.match(hayRegex);
-      if (hayMatch && hayMatch[1]) {
-        tipo = hayMatch[1].trim();
+      const adjRegex = /\b([^,.\s]+?\s+(?:roto|rota|dañado|dañada|seco|seca|enfermo|enferma|bloqueado|bloqueada|fuga|perdida|perdiendo))\b/i;
+      const adjMatch = cleanText.match(adjRegex);
+      
+      if (adjMatch && adjMatch[1]) {
+        tipo = adjMatch[1].trim();
       } else {
-        const startMatch = cleanText.match(/(?:incidencia|averia|avería|reportar)\s+(?:donde estoy\s+)?(?:hay\s+)?([^,.]+?)(?:\s+(?:necesito|para|donde|en|de)\b|$)/i);
-        if (startMatch && startMatch[1]) {
-          tipo = startMatch[1].trim();
+        const hayRegex = /(?:hay|tengo|se ha detectado|detectado|veo)\s+(?:un\s+|una\s+)?([^,.]+?(?:roto|rota|enfermo|enferma|dañado|dañada|fuga|perdida|perdiendo|roto|rota))/i;
+        const hayMatch = cleanText.match(hayRegex);
+        if (hayMatch && hayMatch[1]) {
+          tipo = hayMatch[1].trim();
+        } else {
+          const startMatch = cleanText.match(/(?:incidencia|averia|avería|reportar)\s+(?:donde estoy\s+)?(?:hay\s+)?([^,.]+?)(?:\s+(?:necesito|para|donde|en|de)\b|$)/i);
+          if (startMatch && startMatch[1]) {
+            tipo = startMatch[1].trim();
+          }
         }
       }
       
       if (tipo) {
-        tipo = tipo.replace(/^(un|una|unos|unas|el|la|los|las)\s+/i, '');
+        tipo = tipo.replace(/^(un|una|unos|unas|el|la|los|las|de)\s+/i, '');
         tipo = tipo.charAt(0).toUpperCase() + tipo.slice(1);
       } else {
         tipo = "Incidencia de Voz";
+      }
+      
+      // 5. EXTRACT DESCRIPCIÓN (descartando lo mapeado)
+      let tempDesc = cleanText.toLowerCase();
+      if (matchedMaterialString) {
+        tempDesc = tempDesc.replace(matchedMaterialString.toLowerCase(), "");
+      }
+      if (tipo) {
+        tempDesc = tempDesc.replace(tipo.toLowerCase(), "");
+      }
+      if (matchedFincaName) {
+        tempDesc = tempDesc.replace(matchedFincaName.toLowerCase(), "");
+        tempDesc = tempDesc.replace("finca del", "");
+        tempDesc = tempDesc.replace("finca de", "");
+        tempDesc = tempDesc.replace("finca", "");
+      }
+      
+      const triggersToRemove = [
+        "quiero reportar una incidencia",
+        "quiero reportar un incidente",
+        "reportar una incidencia",
+        "reportar un incidente",
+        "quiero reportar una averia",
+        "quiero reportar una avería",
+        "reportar una averia",
+        "reportar una avería",
+        "incidencia de",
+        "incidencia",
+        "averia de",
+        "avería de",
+        "averia",
+        "avería",
+        "donde estoy",
+        "dónde estoy",
+        "en esta posición",
+        "en esta posicion",
+        "mi posicion",
+        "mi posición",
+        "ubicación actual",
+        "ubicacion actual",
+        "aquí",
+        "aqui",
+        "en la",
+        "en el"
+      ];
+      for (const trigger of triggersToRemove) {
+        tempDesc = tempDesc.replace(trigger, "");
+      }
+      
+      tempDesc = tempDesc.replace(/\b(?:hay un|hay una|tengo un|tengo una|se ha detectado un|se ha detectado una|detectado un|detectada una|veo un|veo una)\b/gi, "");
+      
+      let cleanDesc = tempDesc.trim();
+      cleanDesc = cleanDesc.replace(/^(?:de|en|y|con|donde|para|que|esta|este|la|el|los|las|un|una|por una|por un)\s+/gi, "");
+      cleanDesc = cleanDesc.trim();
+      
+      if (cleanDesc.length <= 2) {
+        cleanDesc = "";
+      } else {
+        cleanDesc = cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
       }
       
       // E. DETERMINAR COORDENADAS
@@ -397,7 +487,6 @@ app.post('/api/voice-command', async (req, res) => {
           finalLat = parseFloat(lat);
           finalLng = parseFloat(lng);
         } else {
-          // Intentar finca
           const fincaObj = groupData.fincas.find(f => f.id === fincaId);
           if (fincaObj) {
             finalLat = fincaObj.lat;
@@ -410,7 +499,7 @@ app.post('/api/voice-command', async (req, res) => {
         id: 'inc-' + Date.now(),
         fincaId: fincaId,
         tipo: tipo,
-        descripcion: extractDescription(cleanText, tipo, materiales),
+        descripcion: cleanDesc,
         materiales: materiales,
         herramientas: '',
         lat: finalLat,
@@ -431,6 +520,9 @@ app.post('/api/voice-command', async (req, res) => {
       
       const fincaObj = groupData.fincas.find(f => f.id === fincaId);
       resultMessage = `Incidencia de "${tipo}" registrada con éxito para la finca ${fincaObj ? fincaObj.name : 'General'}.`;
+      if (nestedShoppingItem) {
+        resultMessage += ` Y añadido ${nestedShoppingItem} a la lista de la compra.`;
+      }
       
     } else {
       // PROCESAR COMPRA
