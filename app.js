@@ -2741,15 +2741,15 @@ function cleanDescriptionOfFillerWords(desc) {
   if (!desc) return "";
   
   const stopWords = new Set([
-    "quiero", "registrar", "reportar", "incidencia", "incidente", "averia", "avería", 
+    "quiero", "registra", "registrar", "registro", "registré", "registre", "reportar", "reporta", "reporto", "reporté", "reporte", 
+    "incidencia", "incidente", "averia", "avería", "problema", "nuevo", "nuevos", "nueva", "nuevas",
     "finca", "del", "de", "la", "el", "los", "las", "un", "una", "unos", "unas", 
     "y", "que", "en", "por", "con", "donde", "esta", "este", "estos", "estas", 
     "cual", "la cual", "lo", "los", "las", "para", "aqui", "aquí", "estoy", 
-    "dónde", "donde", "tengo", "hay", "se", "ha", "veo", "detectado", "detectada", 
+    "dónde", "donde", "tengo", "hay", "se", "ha", "me", "te", "le", "nos", "veo", "detectado", "detectada", 
     "necesito", "necesitamos", "hace", "falta", "hacen", "traer", "traiga", 
-    "tráeme", "traeme", "añadir", "añadas", "añade", "lista", "compra", "comprar",
-    "nuevo", "nuevos", "nueva", "nuevas", "mi", "mis", "tu", "tus", "su", "sus",
-    "como", "este", "esta", "esto", "a", "al", "o"
+    "tráeme", "traeme", "añadir", "añadas", "añade", "pon", "poner", "puso", "puse", "lista", "compra", "comprar",
+    "mi", "mis", "tu", "tus", "su", "sus", "como", "este", "esta", "esto", "a", "al", "o"
   ]);
   
   const words = desc.toLowerCase().match(/[a-zñáéíóúü]+/gi) || [];
@@ -2864,17 +2864,44 @@ function parseIncidentVoiceCommand(cleanText, fincaList, lastGpsPosition, select
   
   // 5. EXTRACT TIPO DE INCIDENCIA (PROBLEMA)
   let tipo = '';
+  let matchedVerbString = "";
   
-  // A. Buscar si se ha secado algo
-  const secadoRegex = /\b(?:se\s+ha\s+secado|se\s+secó|se\s+seco|se\s+ha\s+seco)\s+(?:un\s+|una\s+|el\s+|la\s+)?(olivo|almendro|árbol|arbol|parra|planta|olivos|almendros|árboles|arboles|parras|plantas)\b/i;
-  const secadoMatch = lowerText.match(secadoRegex);
-  if (secadoMatch && secadoMatch[1]) {
-    const noun = secadoMatch[1];
-    if (noun.startsWith("almendro")) tipo = "Almendro seco";
-    else if (noun.startsWith("olivo")) tipo = "Olivo seco";
-    else if (noun.startsWith("árbol") || noun.startsWith("arbol")) tipo = "Árbol seco";
-    else if (noun.startsWith("parra")) tipo = "Parra seca";
-    else if (noun.startsWith("planta")) tipo = "Planta seca";
+  // A. Buscar si se ha roto/secado/dañado algo con verbo antes (ej: "se me ha roto un almendro")
+  const verbBeforeRegex = /\b(?:se\s+ha\s+roto|se\s+me\s+ha\s+roto|se\s+rompió|se\s+rompio|se\s+ha\s+dañado|se\s+me\s+ha\s+dañado|se\s+dañó|se\s+danó|se\s+ha\s+estropeado|se\s+me\s+ha\s+estropeado|se\s+estropeó|se\s+estropeo|se\s+ha\s+secado|se\s+me\s+ha\s+secado|se\s+secó|se\s+seco)\s+(?:un\s+|una\s+|el\s+|la\s+|los\s+|las\s+|unos\s+|unas\s+)?(olivo|almendro|goma|tubo|válvula|valvula|llave|manguera|gotero|aspersor|árbol|arbol|parra|planta|muro|valla|cable|bomba|motor)\b/i;
+  const verbBeforeMatch = lowerText.match(verbBeforeRegex);
+  if (verbBeforeMatch && verbBeforeMatch[1]) {
+    const noun = verbBeforeMatch[1];
+    matchedVerbString = verbBeforeMatch[0];
+    const matchStr = verbBeforeMatch[0].toLowerCase();
+    let verbType = "roto";
+    if (matchStr.includes("secado") || matchStr.includes("secó") || matchStr.includes("seco")) {
+      verbType = "seco";
+    } else if (matchStr.includes("dañado") || matchStr.includes("dañó") || matchStr.includes("danó")) {
+      verbType = "dañado";
+    }
+    
+    const femNouns = ["goma", "válvula", "valvula", "llave", "manguera", "parra", "planta", "valla", "bomba"];
+    const isFem = femNouns.includes(noun.toLowerCase());
+    let adj = "roto";
+    if (verbType === "seco") adj = isFem ? "seca" : "seco";
+    else if (verbType === "dañado") adj = isFem ? "dañada" : "dañado";
+    else adj = isFem ? "rota" : "roto";
+    
+    tipo = noun.charAt(0).toUpperCase() + noun.slice(1).toLowerCase() + " " + adj;
+  }
+  
+  // B. Buscar si se ha secado algo
+  if (!tipo) {
+    const secadoRegex = /\b(?:se\s+ha\s+secado|se\s+secó|se\s+seco|se\s+ha\s+seco)\s+(?:un\s+|una\s+|el\s+|la\s+)?(olivo|almendro|árbol|arbol|parra|planta|olivos|almendros|árboles|arboles|parras|plantas)\b/i;
+    const secadoMatch = lowerText.match(secadoRegex);
+    if (secadoMatch && secadoMatch[1]) {
+      const noun = secadoMatch[1];
+      if (noun.startsWith("almendro")) tipo = "Almendro seco";
+      else if (noun.startsWith("olivo")) tipo = "Olivo seco";
+      else if (noun.startsWith("árbol") || noun.startsWith("arbol")) tipo = "Árbol seco";
+      else if (noun.startsWith("parra")) tipo = "Parra seca";
+      else if (noun.startsWith("planta")) tipo = "Planta seca";
+    }
   }
   
   // B. Buscar patrón: sustantivo + adjetivo de rotura/daño
@@ -2941,6 +2968,9 @@ function parseIncidentVoiceCommand(cleanText, fincaList, lastGpsPosition, select
   let tempDesc = lowerText;
   if (matchedMaterialString) {
     tempDesc = tempDesc.replace(matchedMaterialString.toLowerCase(), "");
+  }
+  if (matchedVerbString) {
+    tempDesc = tempDesc.replace(matchedVerbString.toLowerCase(), "");
   }
   if (tipo) {
     tempDesc = tempDesc.replace(tipo.toLowerCase(), "");
