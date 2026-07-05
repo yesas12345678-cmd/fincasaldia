@@ -1372,7 +1372,7 @@ function exportBackup() {
   
   const date = new Date().toISOString().split('T')[0];
   downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `fincasserrano_backup_${date}.json`);
+  downloadAnchor.setAttribute("download", `fincasaldia_backup_${date}.json`);
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();
@@ -1429,7 +1429,7 @@ function importBackup(e) {
           alert("Datos importados con éxito y sincronizados con todos tus dispositivos.");
         }
       } else {
-        alert("El archivo JSON no tiene un formato compatible con FincasSerrano.");
+        alert("El archivo JSON no tiene un formato compatible con Fincas al Día.");
       }
     } catch (err) {
       alert("Error al procesar el archivo. Asegúrate de que sea un archivo JSON válido.");

@@ -1051,7 +1051,7 @@ function exportBackup() {
   
   const date = new Date().toISOString().split('T')[0];
   downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `fincasserrano_backup_${date}.json`);
+  downloadAnchor.setAttribute("download", `fincasaldia_backup_${date}.json`);
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();
