@@ -1,12 +1,12 @@
-const CACHE_NAME = 'fincas-serrano-v32';
+const CACHE_NAME = 'fincas-serrano-v33';
 const ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
   '/app.js',
   '/manifest.json',
-  '/favicon.png?v=4',
-  '/icon-512.png?v=4',
+  '/favicon.png?v=5',
+  '/icon-512.png?v=5',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
 ];
