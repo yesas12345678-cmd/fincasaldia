@@ -90,8 +90,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Registrar Service Worker (para soporte Offline de PWA)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+      .then(reg => {
+        console.log('Service Worker registrado con éxito:', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated') {
+                window.location.reload();
+              }
+            });
+          }
+        });
+      })
       .catch(err => console.error('Error al registrar Service Worker:', err));
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   }
   
   // Sincronizar desde la nube al cargar la app
