@@ -110,9 +110,9 @@ body, html {
 }
 
 .logo-icon {
-  width: 28px;
-  height: 28px;
-  color: var(--primary);
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
 }
 
 .header-logo h1 {
